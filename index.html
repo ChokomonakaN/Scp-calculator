@@ -2,326 +2,46 @@
 <html lang="ja">
 <head>
   <meta charset="UTF-8">
-  <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
   <title>GBL SCP＆攻撃実数値 計算機</title>
   <link rel="manifest" href="manifest.json">
   <style>
-    :root {
-      --bg-color: #f4f6f8;
-      --card-bg: #ffffff;
-      --text-color: #222222;
-      --sub-text: #666666;
-      --border-color: #e0e4e8;
-      --input-bg: #f9fafb;
-      --input-border: #cccccc;
-      --accent-color: #00897b;
-      --active-card-border: #00897b;
-      --active-card-shadow: rgba(0, 137, 123, 0.2);
-      --rank-top-color: #d97706;
-      --atk-val-color: #e65100;
-      --badge-bg: #e0f2f1;
-      --badge-text: #00695c;
-      --btn-bg: #e2e8f0;
-      --btn-text: #334155;
-      --gauge-empty: #d6d9dc;
-      --gauge-empty-text: #ffffff;
-      --gauge-orange: #ee9234;
-      --gauge-max: #e27268;
-    }
-
-    body.dark-mode {
-      --bg-color: #121212;
-      --card-bg: #1e1e1e;
-      --text-color: #f0f0f0;
-      --sub-text: #aaaaaa;
-      --border-color: #2c2c2c;
-      --input-bg: #2a2a2a;
-      --input-border: #444444;
-      --accent-color: #4db6ac;
-      --active-card-border: #4db6ac;
-      --active-card-shadow: rgba(77, 182, 172, 0.25);
-      --rank-top-color: #ffd54f;
-      --atk-val-color: #ff8a65;
-      --badge-bg: #263238;
-      --badge-text: #80cbc4;
-      --btn-bg: #333333;
-      --btn-text: #dddddd;
-      --gauge-empty: #383838;
-      --gauge-empty-text: #999999;
-      --gauge-orange: #e68a2e;
-      --gauge-max: #db685e;
-    }
-
-    body {
-      font-family: -apple-system, BlinkMacSystemFont, "Hiragino Sans", sans-serif;
-      background: var(--bg-color);
-      color: var(--text-color);
-      margin: 0;
-      padding: 12px;
-      transition: background 0.2s, color 0.2s;
-    }
-
-    .header-row {
-      display: flex;
-      justify-content: space-between;
-      align-items: center;
-      margin-bottom: 10px;
-      gap: 6px;
-    }
-
-    h1 {
-      font-size: 1.05rem;
-      margin: 0;
-      color: var(--accent-color);
-    }
-
-    .header-controls {
-      display: flex;
-      align-items: center;
-      gap: 6px;
-    }
-
-    .status-badge {
-      font-size: 0.7rem;
-      padding: 4px 8px;
-      border-radius: 12px;
-      background: var(--badge-bg);
-      color: var(--badge-text);
-    }
-
-    .theme-btn {
-      background: var(--btn-bg);
-      color: var(--btn-text);
-      border: 1px solid var(--border-color);
-      padding: 5px 10px;
-      border-radius: 14px;
-      font-size: 0.75rem;
-      font-weight: bold;
-      cursor: pointer;
-    }
-
-    .card {
-      background: var(--card-bg);
-      border-radius: 12px;
-      padding: 12px;
-      margin-bottom: 12px;
-      border: 1px solid var(--border-color);
-      box-shadow: 0 1px 3px rgba(0,0,0,0.04);
-    }
-
-    .card.active-poke {
-      border: 2px solid var(--active-card-border);
-      box-shadow: 0 0 8px var(--active-card-shadow);
-    }
-
-    .poke-title {
-      font-size: 1rem;
-      font-weight: bold;
-      margin-bottom: 8px;
-      color: var(--text-color);
-      display: flex;
-      justify-content: space-between;
-      align-items: center;
-    }
-
-    .poke-stats {
-      font-size: 0.75rem;
-      color: var(--sub-text);
-      font-weight: normal;
-    }
-
-    label {
-      display: block;
-      font-size: 0.8rem;
-      color: var(--sub-text);
-      margin-bottom: 4px;
-      font-weight: 600;
-    }
-
+    body { font-family: -apple-system, BlinkMacSystemFont, sans-serif; background: #121212; color: #f0f0f0; margin: 0; padding: 14px; }
+    h1 { font-size: 1.15rem; margin: 0 0 10px 0; color: #4db6ac; display: flex; justify-content: space-between; align-items: center; }
+    .status-badge { font-size: 0.72rem; padding: 3px 8px; border-radius: 12px; background: #263238; color: #80cbc4; font-weight: normal; }
+    .card { background: #1e1e1e; border-radius: 10px; padding: 14px; margin-bottom: 12px; border: 1px solid #2c2c2c; }
+    .card.active-poke { border-color: #4db6ac; box-shadow: 0 0 8px rgba(77,182,172,0.25); }
+    .poke-title { font-size: 1rem; font-weight: bold; margin-bottom: 8px; color: #fff; display: flex; justify-content: space-between; align-items: center; }
+    .poke-stats { font-size: 0.75rem; color: #999; font-weight: normal; }
+    label { display: block; font-size: 0.8rem; color: #aaa; margin-bottom: 4px; }
     input[type="text"], select, input[type="number"] {
-      width: 100%;
-      padding: 10px;
-      font-size: 0.95rem;
-      border-radius: 8px;
-      border: 1px solid var(--input-border);
-      background: var(--input-bg);
-      color: var(--text-color);
-      box-sizing: border-box;
-      margin-bottom: 10px;
+      width: 100%; padding: 10px; font-size: 0.95rem; border-radius: 6px;
+      border: 1px solid #333; background: #2a2a2a; color: #fff; box-sizing: border-box; margin-bottom: 10px;
     }
-
-    .custom-stats {
-      display: none;
-      grid-template-columns: repeat(3, 1fr);
-      gap: 8px;
-      margin-bottom: 8px;
-    }
-
-    /* 15分割ゲージUI */
-    .iv-section {
-      margin-bottom: 12px;
-    }
-
-    .iv-header {
-      display: flex;
-      justify-content: space-between;
-      align-items: center;
-      margin-bottom: 5px;
-    }
-
-    .iv-label-text {
-      font-size: 0.9rem;
-      font-weight: bold;
-      color: var(--text-color);
-    }
-
-    .iv-val-num {
-      color: var(--accent-color);
-      font-size: 1rem;
-      margin-left: 4px;
-    }
-
-    .zero-btn {
-      background: var(--btn-bg);
-      color: var(--btn-text);
-      border: none;
-      border-radius: 6px;
-      padding: 3px 10px;
-      font-size: 0.75rem;
-      font-weight: bold;
-      cursor: pointer;
-      touch-action: manipulation;
-    }
-
-    .zero-btn.active-zero {
-      background: var(--accent-color);
-      color: #fff;
-    }
-
-    .gauge-row {
-      display: grid;
-      grid-template-columns: repeat(3, 1fr);
-      gap: 5px;
-      user-select: none;
-      -webkit-user-select: none;
-    }
-
-    .gauge-group {
-      display: grid;
-      grid-template-columns: repeat(5, 1fr);
-      gap: 1.5px;
-    }
-
-    .gauge-cell {
-      height: 42px;
-      background: var(--gauge-empty);
-      color: var(--gauge-empty-text);
-      display: flex;
-      align-items: center;
-      justify-content: center;
-      font-size: 0.85rem;
-      font-weight: bold;
-      cursor: pointer;
-      touch-action: manipulation;
-      transition: background 0.1s;
-    }
-
-    /* 左端(1)と右端(15)を丸くする */
-    .gauge-group:first-child .gauge-cell:first-child {
-      border-top-left-radius: 21px;
-      border-bottom-left-radius: 21px;
-      padding-left: 2px;
-    }
-    .gauge-group:last-child .gauge-cell:last-child {
-      border-top-right-radius: 21px;
-      border-bottom-right-radius: 21px;
-      padding-right: 2px;
-    }
-
-    .gauge-cell.filled-orange {
-      background: var(--gauge-orange);
-      color: #ffffff;
-    }
-
-    .gauge-cell.filled-max {
-      background: var(--gauge-max);
-      color: #ffffff;
-    }
-
-    table {
-      width: 100%;
-      border-collapse: collapse;
-      font-size: 0.88rem;
-    }
-
-    th, td {
-      padding: 8px 4px;
-      text-align: center;
-      border-bottom: 1px solid var(--border-color);
-    }
-
-    th {
-      color: var(--accent-color);
-      font-size: 0.78rem;
-    }
-
-    tr:last-child td {
-      border-bottom: none;
-    }
-
-    .rank-top {
-      color: var(--rank-top-color);
-      font-weight: bold;
-    }
-
-    .atk-val {
-      color: var(--atk-val-color);
-      font-weight: bold;
-    }
-
-    .toggle-row {
-      display: flex;
-      align-items: center;
-      justify-content: space-between;
-      font-size: 0.85rem;
-      margin-top: 8px;
-      padding-top: 8px;
-      border-top: 1px solid var(--border-color);
-    }
-
-    .toggle-left {
-      display: flex;
-      align-items: center;
-      gap: 6px;
-    }
-
-    .reload-btn {
-      background: var(--btn-bg);
-      color: var(--btn-text);
-      border: none;
-      padding: 6px 10px;
-      border-radius: 6px;
-      font-size: 0.75rem;
-      cursor: pointer;
-    }
+    .iv-grid { display: grid; grid-template-columns: repeat(3, 1fr); gap: 8px; }
+    .custom-stats { display: none; grid-template-columns: repeat(3, 1fr); gap: 8px; margin-top: 4px; }
+    table { width: 100%; border-collapse: collapse; font-size: 0.88rem; }
+    th, td { padding: 8px 4px; text-align: center; border-bottom: 1px solid #2c2c2c; }
+    th { color: #4db6ac; font-size: 0.78rem; }
+    tr:last-child td { border-bottom: none; }
+    .rank-top { color: #ffd54f; font-weight: bold; }
+    .atk-val { color: #ff8a65; font-weight: bold; }
+    .toggle-row { display: flex; align-items: center; justify-content: space-between; font-size: 0.85rem; margin-top: 4px; }
+    .toggle-left { display: flex; align-items: center; gap: 6px; }
+    .reload-btn { background: #333; color: #ccc; border: none; padding: 5px 10px; border-radius: 6px; font-size: 0.75rem; cursor: pointer; }
   </style>
 </head>
 <body>
 
-  <div class="header-row">
-    <h1>SCP ＆ 攻撃実数値</h1>
-    <div class="header-controls">
-      <span id="dbStatus" class="status-badge">確認中...</span>
-      <button id="themeBtn" class="theme-btn" onclick="toggleTheme()">🌙 ダーク</button>
-    </div>
-  </div>
+  <h1>
+    <span>SCP ＆ 攻撃実数値 計算機</span>
+    <span id="dbStatus" class="status-badge">データ確認中...</span>
+  </h1>
 
   <div class="card">
-    <label>ポケモン検索（ひらがな・カタカナ可）</label>
-    <input type="text" id="searchInput" placeholder="例: ドジョッチ / りざーどん / イーブイ" oninput="filterPokemon()">
-
-    <label>ポケモン選択（進化系統＆メガを一括表示）</label>
-    <select id="pokeSelect" onchange="onPokeChange()"></select>
+    <label>ポケモンを選択（文字入力で絞り込み可能）</label>
+    <input type="text" id="searchInput" placeholder="ポケモン名を入力（ひらがな・カタカナ）" oninput="filterPokemon()">
+    <select id="pokeSelect" size="5" onchange="onPokeSelectChange()" style="height: 120px; margin-bottom: 10px;"></select>
 
     <div id="customBox" class="custom-stats">
       <div><label>種族値 攻撃</label><input type="number" id="baseAtk" value="200" oninput="calculate()"></div>
@@ -329,37 +49,16 @@
       <div><label>種族値 HP</label><input type="number" id="baseSta" value="200" oninput="calculate()"></div>
     </div>
 
-    <!-- 攻撃ゲージ -->
-    <div class="iv-section">
-      <div class="iv-header">
-        <span class="iv-label-text">攻撃<span id="labelAtk" class="iv-val-num">0</span></span>
-        <button id="zeroAtk" class="zero-btn" onclick="setIv('atk', 0)">0にする</button>
-      </div>
-      <div id="gaugeAtk" class="gauge-row"></div>
-    </div>
-
-    <!-- 防御ゲージ -->
-    <div class="iv-section">
-      <div class="iv-header">
-        <span class="iv-label-text">防御<span id="labelDef" class="iv-val-num">15</span></span>
-        <button id="zeroDef" class="zero-btn" onclick="setIv('def', 0)">0にする</button>
-      </div>
-      <div id="gaugeDef" class="gauge-row"></div>
-    </div>
-
-    <!-- HPゲージ -->
-    <div class="iv-section">
-      <div class="iv-header">
-        <span class="iv-label-text">HP<span id="labelSta" class="iv-val-num">15</span></span>
-        <button id="zeroSta" class="zero-btn" onclick="setIv('sta', 0)">0にする</button>
-      </div>
-      <div id="gaugeSta" class="gauge-row"></div>
+    <div class="iv-grid">
+      <div><label>攻撃 IV (0-15)</label><input type="number" id="ivAtk" min="0" max="15" value="0" oninput="calculate()"></div>
+      <div><label>防御 IV (0-15)</label><input type="number" id="ivDef" min="0" max="15" value="15" oninput="calculate()"></div>
+      <div><label>HP IV (0-15)</label><input type="number" id="ivSta" min="0" max="15" value="15" oninput="calculate()"></div>
     </div>
 
     <div class="toggle-row">
       <div class="toggle-left">
-        <input type="checkbox" id="bbToggle" onchange="calculate()" style="width:18px;height:18px;">
-        <label for="bbToggle" style="margin:0; color:var(--text-color); font-size:0.85rem;">最高の相棒（PL51上限）を含める</label>
+        <input type="checkbox" id="bbToggle" onchange="calculate()">
+        <label for="bbToggle" style="margin:0; color:#f0f0f0;">最高の相棒（PL51上限）を含める</label>
       </div>
       <button class="reload-btn" onclick="fetchAllPokemon(true)">図鑑再取得</button>
     </div>
@@ -368,14 +67,22 @@
   <div id="resultsContainer"></div>
 
 <script>
+const EXTRA_DATA = [
+  { id: "HONEDGE", dex: 679, name: "ヒトツキ", atk: 135, def: 139, sta: 128, chain: "CHAIN_HONEDGE" },
+  { id: "DOUBLADE", dex: 680, name: "ニダンギル", atk: 188, def: 206, sta: 153, chain: "CHAIN_HONEDGE" },
+  { id: "AEGISLASH_SHIELD", dex: 681, name: "ギルガルド(シールド)", atk: 97, def: 291, sta: 155, chain: "CHAIN_HONEDGE" },
+  { id: "AEGISLASH_BLADE", dex: 681, name: "ギルガルド(ブレード)", atk: 291, def: 97, sta: 155, chain: "CHAIN_HONEDGE" }
+];
+
 const FALLBACK_DATA = [
-  { id: "4", name: "ヒトカゲ", atk: 116, def: 93, sta: 118, chain: 2 },
-  { id: "5", name: "リザード", atk: 158, def: 126, sta: 151, chain: 2 },
-  { id: "6", name: "リザードン", atk: 223, def: 173, sta: 186, chain: 2 },
-  { id: "6_mx", name: "メガリザードンX", atk: 273, def: 213, sta: 186, chain: 2 },
-  { id: "6_my", name: "メガリザードンY", atk: 319, def: 212, sta: 186, chain: 2 },
-  { id: "339", name: "ドジョッチ", atk: 93, def: 82, sta: 137, chain: 171 },
-  { id: "340", name: "ナマズン", atk: 151, def: 141, sta: 242, chain: 171 }
+  { id: "CHARMANDER", dex: 4, name: "ヒトカゲ", atk: 116, def: 93, sta: 118, chain: "C4" },
+  { id: "CHARMELEON", dex: 5, name: "リザード", atk: 158, def: 126, sta: 151, chain: "C4" },
+  { id: "CHARIZARD", dex: 6, name: "リザードン", atk: 223, def: 173, sta: 186, chain: "C4" },
+  { id: "CHARIZARD_MEGA_X", dex: 6, name: "メガリザードンX", atk: 273, def: 213, sta: 186, chain: "C4" },
+  { id: "CHARIZARD_MEGA_Y", dex: 6, name: "メガリザードンY", atk: 319, def: 212, sta: 186, chain: "C4" },
+  { id: "BARBOACH", dex: 339, name: "ドジョッチ", atk: 93, def: 82, sta: 137, chain: "C339" },
+  { id: "WHISCASH", dex: 340, name: "ナマズン", atk: 151, def: 141, sta: 242, chain: "C339" },
+  ...EXTRA_DATA
 ];
 
 const CPM = [
@@ -396,77 +103,6 @@ const CPM = [
 
 let ALL_POKEMON = [];
 let rankCache = {};
-const currentIV = { atk: 0, def: 15, sta: 15 };
-
-// ダークモード / ホワイトモード切り替え（初期値はホワイトモード）
-function toggleTheme() {
-  const isDark = document.body.classList.toggle("dark-mode");
-  document.getElementById("themeBtn").textContent = isDark ? "☀️ ホワイト" : "🌙 ダーク";
-}
-
-// 15分割ゲージの生成
-function initGauges() {
-  const types = [
-    { key: "atk", elId: "gaugeAtk" },
-    { key: "def", elId: "gaugeDef" },
-    { key: "sta", elId: "gaugeSta" }
-  ];
-
-  types.forEach(t => {
-    const container = document.getElementById(t.elId);
-    container.innerHTML = "";
-    for (let g = 0; g < 3; g++) {
-      const group = document.createElement("div");
-      group.className = "gauge-group";
-      for (let i = 1; i <= 5; i++) {
-        const val = g * 5 + i;
-        const cell = document.createElement("div");
-        cell.className = "gauge-cell";
-        cell.dataset.val = val;
-        cell.textContent = val;
-        cell.onclick = () => {
-          // 同じ数字を再タップしたら0にする
-          const nextVal = (currentIV[t.key] === val) ? 0 : val;
-          setIv(t.key, nextVal);
-        };
-        group.appendChild(cell);
-      }
-      container.appendChild(group);
-    }
-  });
-  updateGaugeUI();
-}
-
-function setIv(key, val) {
-  currentIV[key] = val;
-  updateGaugeUI();
-  calculate();
-}
-
-function updateGaugeUI() {
-  const map = [
-    { key: "atk", elId: "gaugeAtk", labelId: "labelAtk", zeroId: "zeroAtk" },
-    { key: "def", elId: "gaugeDef", labelId: "labelDef", zeroId: "zeroDef" },
-    { key: "sta", elId: "gaugeSta", labelId: "labelSta", zeroId: "zeroSta" }
-  ];
-
-  map.forEach(m => {
-    const v = currentIV[m.key];
-    document.getElementById(m.labelId).textContent = v;
-    const zeroBtn = document.getElementById(m.zeroId);
-    if (v === 0) zeroBtn.classList.add("active-zero");
-    else zeroBtn.classList.remove("active-zero");
-
-    const cells = document.querySelectorAll(`#${m.elId} .gauge-cell`);
-    cells.forEach(c => {
-      const cellVal = Number(c.dataset.val);
-      c.classList.remove("filled-orange", "filled-max");
-      if (cellVal <= v) {
-        c.classList.add(v === 15 ? "filled-max" : "filled-orange");
-      }
-    });
-  });
-}
 
 function toKatakana(str) {
   return str.replace(/[\u3041-\u3096]/g, m => String.fromCharCode(m.charCodeAt(0) + 0x60));
@@ -474,95 +110,72 @@ function toKatakana(str) {
 
 async function fetchAllPokemon(force = false) {
   const statusEl = document.getElementById("dbStatus");
-  const saved = localStorage.getItem("pogo_all_pokemon_v2");
-
+  const saved = localStorage.getItem("pogo_all_pokemon_v3");
   if (saved && !force) {
     try {
       ALL_POKEMON = JSON.parse(saved);
-      statusEl.textContent = `オフライン対応 (${ALL_POKEMON.length}種)`;
-      populateSelect();
+      statusEl.textContent = `オフライン対応済 (${ALL_POKEMON.length}種)`;
+      updateSelectOptions();
       return;
     } catch (e) {}
   }
-
-  statusEl.textContent = "図鑑取得中...";
+  statusEl.textContent = "全ポケモン取得中...";
   try {
     const res = await fetch("https://pokemon-go-api.github.io/pokemon-go-api/api/pokedex.json");
-    if (!res.ok) throw new Error("Network error");
     const raw = await res.json();
-
     const parent = {};
-    const find = (x) => {
-      if (!parent[x]) parent[x] = x;
-      return parent[x] === x ? x : (parent[x] = find(parent[x]));
-    };
-    const union = (a, b) => {
-      const ra = find(a), rb = find(b);
-      if (ra !== rb) parent[rb] = ra;
-    };
+    const find = x => (!parent[x] ? (parent[x] = x) : parent[x] === x ? x : (parent[x] = find(parent[x])));
+    const union = (a, b) => { const ra = find(a), rb = find(b); if (ra !== rb) parent[rb] = ra; };
 
     raw.forEach(p => {
       if (!p.id) return;
       find(p.id);
       if (p.evolutions) p.evolutions.forEach(ev => { if (ev.id) union(p.id, ev.id); });
-      if (p.regionForms) {
-        Object.values(p.regionForms).forEach(rf => {
-          if (!rf.id) return;
-          find(rf.id);
-          if (rf.evolutions) rf.evolutions.forEach(ev => { if (ev.id) union(rf.id, ev.id); });
-        });
-      }
+      if (p.regionForms) Object.values(p.regionForms).forEach(rf => {
+        if (!rf.id) return; find(rf.id);
+        if (rf.evolutions) rf.evolutions.forEach(ev => { if (ev.id) union(rf.id, ev.id); });
+      });
     });
 
     const list = [];
     raw.forEach(p => {
       if (!p.stats || !p.names || !p.names.Japanese) return;
       const baseChain = find(p.id);
-      list.push({
-        id: p.id, dex: p.dexNr, name: p.names.Japanese,
-        atk: p.stats.attack, def: p.stats.defense, sta: p.stats.stamina, chain: baseChain
+      list.push({ id: p.id, dex: p.dexNr || 9999, name: p.names.Japanese, atk: p.stats.attack, def: p.stats.defense, sta: p.stats.stamina, chain: baseChain });
+      if (p.regionForms) Object.values(p.regionForms).forEach(rf => {
+        if (rf.stats && rf.names && rf.names.Japanese)
+          list.push({ id: rf.id, dex: p.dexNr || 9999, name: rf.names.Japanese, atk: rf.stats.attack, def: rf.stats.defense, sta: rf.stats.stamina, chain: find(rf.id) || baseChain });
       });
+      if (p.megaEvolutions) Object.values(p.megaEvolutions).forEach(mg => {
+        if (mg.stats && mg.names && mg.names.Japanese)
+          list.push({ id: mg.id, dex: (p.dexNr || 9999) + 0.1, name: mg.names.Japanese, atk: mg.stats.attack, def: mg.stats.defense, sta: mg.stats.stamina, chain: baseChain });
+      });
+    });
 
-      if (p.regionForms) {
-        Object.values(p.regionForms).forEach(rf => {
-          if (!rf.stats || !rf.names || !rf.names.Japanese) return;
-          list.push({
-            id: rf.id, dex: p.dexNr, name: rf.names.Japanese,
-            atk: rf.stats.attack, def: rf.stats.defense, sta: rf.stats.stamina, chain: find(rf.id) || baseChain
-          });
-        });
-      }
-
-      if (p.megaEvolutions) {
-        Object.values(p.megaEvolutions).forEach(mg => {
-          if (!mg.stats || !mg.names || !mg.names.Japanese) return;
-          list.push({
-            id: mg.id, dex: p.dexNr, name: mg.names.Japanese,
-            atk: mg.stats.attack, def: mg.stats.defense, sta: mg.stats.stamina, chain: baseChain
-          });
-        });
-      }
+    EXTRA_DATA.forEach(ex => {
+      if (!list.some(p => p.name === ex.name)) list.push(ex);
     });
 
     ALL_POKEMON = list;
-    localStorage.setItem("pogo_all_pokemon_v2", JSON.stringify(ALL_POKEMON));
-    statusEl.textContent = `保存完了 (${ALL_POKEMON.length}種)`;
+    localStorage.setItem("pogo_all_pokemon_v3", JSON.stringify(ALL_POKEMON));
+    statusEl.textContent = `全図鑑保存完了 (${ALL_POKEMON.length}種)`;
   } catch (err) {
     ALL_POKEMON = FALLBACK_DATA;
-    statusEl.textContent = `内蔵データ (${ALL_POKEMON.length}種)`;
+    statusEl.textContent = `内蔵データ動作中 (${ALL_POKEMON.length}種)`;
   }
-  populateSelect();
+  updateSelectOptions();
 }
 
-function populateSelect(filterText = "") {
+function updateSelectOptions() {
   const select = document.getElementById("pokeSelect");
+  const query = document.getElementById("searchInput").value;
+  const kataQuery = toKatakana(query.trim());
   const prevVal = select.value;
+
   select.innerHTML = "";
+  const filtered = ALL_POKEMON.filter(p => !kataQuery || toKatakana(p.name).includes(kataQuery));
 
-  const kataFilter = toKatakana(filterText.trim());
-  const filtered = ALL_POKEMON.filter(p => !kataFilter || toKatakana(p.name).includes(kataFilter));
-
-  filtered.forEach((p) => {
+  filtered.forEach(p => {
     const opt = document.createElement("option");
     opt.value = p.id;
     opt.textContent = p.name;
@@ -582,16 +195,16 @@ function populateSelect(filterText = "") {
   } else {
     select.value = "custom";
   }
-  onPokeChange();
+  onPokeSelectChange();
 }
 
 function filterPokemon() {
-  populateSelect(document.getElementById("searchInput").value);
+  updateSelectOptions();
 }
 
-function onPokeChange() {
-  const isCustom = document.getElementById("pokeSelect").value === "custom";
-  document.getElementById("customBox").style.display = isCustom ? "grid" : "none";
+function onPokeSelectChange() {
+  const val = document.getElementById("pokeSelect").value;
+  document.getElementById("customBox").style.display = (val === "custom") ? "grid" : "none";
   calculate();
 }
 
@@ -603,4 +216,98 @@ function getBestForCap(bA, bD, bS, iA, iD, iS, cap, maxIdx) {
     const def = (bD + iD) * m;
     const rawSta = (bS + iS) * m;
     const sta = Math.max(10, Math.floor(rawSta));
-    const cp = Math.max(10, Math.floor((
+    const cp = Math.max(10, Math.floor((atk * Math.sqrt(def) * Math.sqrt(rawSta)) / 10));
+    if (cp <= cap) {
+      best = { cp, pl: 1 + i * 0.5, atk, scp: Math.pow(atk * def * sta, 2 / 3) / 10 };
+    } else break;
+  }
+  return best;
+}
+
+function getAllScpSorted(bA, bD, bS, cap, maxIdx) {
+  const key = `${bA}_${bD}_${bS}_${cap}_${maxIdx}`;
+  if (rankCache[key]) return rankCache[key];
+  const arr = [];
+  for (let a = 0; a <= 15; a++)
+    for (let d = 0; d <= 15; d++)
+      for (let s = 0; s <= 15; s++) {
+        const c = getBestForCap(bA, bD, bS, a, d, s, cap, maxIdx);
+        if (c) arr.push(c.scp);
+      }
+  arr.sort((x, y) => y - x);
+  return (rankCache[key] = arr);
+}
+
+function parseIv(id) {
+  const v = parseInt(document.getElementById(id).value, 10);
+  return isNaN(v) ? 0 : Math.min(15, Math.max(0, v));
+}
+
+function calculate() {
+  const val = document.getElementById("pokeSelect").value;
+  const iA = parseIv("ivAtk"), iD = parseIv("ivDef"), iS = parseIv("ivSta");
+  const maxIdx = document.getElementById("bbToggle").checked ? 100 : 98;
+
+  let targetList = [];
+  if (val === "custom") {
+    targetList = [{
+      id: "custom", name: "カスタム種族値",
+      atk: Number(document.getElementById("baseAtk").value) || 100,
+      def: Number(document.getElementById("baseDef").value) || 100,
+      sta: Number(document.getElementById("baseSta").value) || 100
+    }];
+  } else {
+    const sel = ALL_POKEMON.find(p => p.id === val);
+    if (sel) {
+      targetList = ALL_POKEMON.filter(p => p.chain === sel.chain).sort((a, b) => (a.dex || 0) - (b.dex || 0));
+    }
+  }
+
+  const leagues = [
+    { name: "リトル", cap: 500, showRank: true },
+    { name: "スーパー", cap: 1500, showRank: true },
+    { name: "ハイパー", cap: 2500, showRank: true },
+    { name: "マスター", cap: 99999, showRank: false }
+  ];
+
+  const container = document.getElementById("resultsContainer");
+  container.innerHTML = "";
+
+  targetList.forEach(poke => {
+    const card = document.createElement("div");
+    card.className = "card" + (poke.id === val ? " active-poke" : "");
+    let rowsHtml = "";
+
+    leagues.forEach(lg => {
+      const target = getBestForCap(poke.atk, poke.def, poke.sta, iA, iD, iS, lg.cap, maxIdx);
+      let rankText = "―";
+      if (lg.showRank && target) {
+        const sorted = getAllScpSorted(poke.atk, poke.def, poke.sta, lg.cap, maxIdx);
+        let higher = 0;
+        for (let i = 0; i < sorted.length; i++) {
+          if (sorted[i] > target.scp + 1e-9) higher++; else break;
+        }
+        const rank = higher + 1;
+        rankText = `<span class="${rank <= 50 ? 'rank-top' : ''}">${rank}位</span>`;
+      }
+      rowsHtml += target
+        ? `<tr><td>${lg.name}</td><td>${target.cp} <small>(PL${target.pl})</small></td><td>${rankText}</td><td class="atk-val">${target.atk.toFixed(2)}</td></tr>`
+        : `<tr><td>${lg.name}</td><td colspan="3">上限超過</td></tr>`;
+    });
+
+    card.innerHTML = `
+      <div class="poke-title">
+        <span>${poke.name} ${poke.id === val ? "★" : ""}</span>
+        <span class="poke-stats">種族値 A:${poke.atk} / D:${poke.def} / H:${poke.sta}</span>
+      </div>
+      <table><thead><tr><th>リーグ</th><th>CP (PL)</th><th>SCP順位</th><th>攻撃実数値</th></tr></thead><tbody>${rowsHtml}</tbody></table>
+    `;
+    container.appendChild(card);
+  });
+}
+
+if ("serviceWorker" in navigator) navigator.serviceWorker.register("sw.js");
+fetchAllPokemon();
+</script>
+</body>
+</html>
