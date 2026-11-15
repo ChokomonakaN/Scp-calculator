@@ -50,7 +50,8 @@
   .c-ml  { background: #fcf5fc; }
 
   .rank-txt { font-size: 15px; font-weight: bold; text-decoration: underline; color: #111; display: inline-block; margin-bottom: 2px; }
-  .rank-1 { color: #d9534f; font-size: 15px; font-weight: bold; text-decoration: underline; display: inline-block; margin-bottom: 2px; }
+  .rank-red { color: #d9534f; }
+  .rank-orange { color: #ef6c00; }
   .sub-info { font-size: 11px; color: #666; }
   .atk-info { font-size: 11px; color: #c62828; font-weight: bold; }
   .lv51-box { margin-top: 6px; padding-top: 5px; border-top: 1px dashed #ddd; }
@@ -369,9 +370,12 @@ function getRank(poke, target, cap, maxIdx) {
 }
 
 function formatEntry(poke, selectedPoke, target, rank, showPreCp) {
-  const rankHtml = rank === 1
-    ? `<div class="rank-1">👑1位</div>`
-    : `<div class="rank-txt">${rank}位</div>`;
+  let rankCls = "rank-txt";
+  if (rank <= 9) rankCls += " rank-red";
+  else if (rank <= 100) rankCls += " rank-orange";
+  const rankLabel = rank === 1 ? `👑1位` : `${rank}位`;
+  const rankHtml = `<div class="${rankCls}">${rankLabel}</div>`;
+
   let preCpHtml = "";
   if (showPreCp && selectedPoke && poke.stage > selectedPoke.stage && target.pl < 50) {
     const preCp = calcCpAtIdx(selectedPoke.atk, selectedPoke.def, selectedPoke.sta, ivs.atk, ivs.def, ivs.sta, target.idx);
