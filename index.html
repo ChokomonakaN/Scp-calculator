@@ -1,0 +1,192 @@
+<!DOCTYPE html>
+<html lang="ja">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>GBL SCP＆攻撃実数値計算</title>
+  <link rel="manifest" href="manifest.json">
+  <style>
+    body { font-family: sans-serif; background: #121212; color: #f0f0f0; margin: 0; padding: 16px; }
+    h1 { font-size: 1.2rem; margin-bottom: 12px; color: #4db6ac; }
+    .card { background: #1e1e1e; border-radius: 10px; padding: 14px; margin-bottom: 14px; }
+    label { display: block; font-size: 0.85rem; color: #aaa; margin-bottom: 4px; }
+    select, input[type="number"] { width: 100%; padding: 10px; font-size: 1rem; border-radius: 6px; border: 1px solid #333; background: #2a2a2a; color: #fff; box-sizing: border-box; margin-bottom: 10px; }
+    .iv-grid { display: grid; grid-template-columns: repeat(3, 1fr); gap: 8px; }
+    .custom-stats { display: none; grid-template-columns: repeat(3, 1fr); gap: 8px; margin-top: 8px; }
+    table { width: 100%; border-collapse: collapse; font-size: 0.9rem; }
+    th, td { padding: 10px 6px; text-align: center; border-bottom: 1px solid #333; }
+    th { color: #4db6ac; font-size: 0.8rem; }
+    .rank-top { color: #ffd54f; font-weight: bold; }
+    .atk-val { color: #ff8a65; font-weight: bold; }
+    .toggle-row { display: flex; align-items: center; gap: 8px; font-size: 0.9rem; margin-top: 4px; }
+  </style>
+</head>
+<body>
+
+  <h1>SCP ＆ 攻撃実数値 計算機</h1>
+
+  <div class="card">
+    <label>ポケモン選択</label>
+    <select id="pokeSelect" onchange="onPokeChange()">
+      <option value="custom">★ 種族値を手入力（カスタム）</option>
+    </select>
+
+    <div id="customBox" class="custom-stats">
+      <div><label>種族値 攻撃</label><input type="number" id="baseAtk" value="200" oninput="calculate()"></div>
+      <div><label>種族値 防御</label><input type="number" id="baseDef" value="200" oninput="calculate()"></div>
+      <div><label>種族値 HP</label><input type="number" id="baseSta" value="200" oninput="calculate()"></div>
+    </div>
+
+    <div class="iv-grid">
+      <div><label>攻撃 IV (0-15)</label><input type="number" id="ivAtk" min="0" max="15" value="0" oninput="calculate()"></div>
+      <div><label>防御 IV (0-15)</label><input type="number" id="ivDef" min="0" max="15" value="15" oninput="calculate()"></div>
+      <div><label>HP IV (0-15)</label><input type="number" id="ivSta" min="0" max="15" value="15" oninput="calculate()"></div>
+    </div>
+
+    <div class="toggle-row">
+      <input type="checkbox" id="bbToggle" onchange="calculate()">
+      <label for="bbToggle" style="margin:0; color:#f0f0f0;">最高の相棒（PL51上限）を含める</label>
+    </div>
+  </div>
+
+  <div class="card">
+    <table>
+      <thead>
+        <tr>
+          <th>リーグ</th>
+          <th>CP (PL)</th>
+          <th>SCP順位</th>
+          <th>攻撃実数値</th>
+        </tr>
+      </thead>
+      <tbody id="resultBody"></tbody>
+    </table>
+  </div>
+
+<script>
+// 主要ポケモンデータ（必要に応じてここに追加可能）
+const POKEMON_DATA = [
+  { name: "リザードン", atk: 223, def: 173, sta: 186 },
+  { name: "チルタリス", atk: 141, def: 201, sta: 181 },
+  { name: "カイリュー", atk: 263, def: 198, sta: 209 },
+  { name: "メルメタル", atk: 226, def: 190, sta: 264 },
+  { name: "ギルガルド(シールド)", atk: 97, def: 291, sta: 155 },
+  { name: "マリルリ", atk: 112, def: 152, sta: 225 },
+  { name: "ラグラージ", atk: 208, def: 175, sta: 225 },
+  { name: "トリデプス", atk: 94, def: 286, sta: 155 },
+  { name: "エアームド", atk: 148, def: 226, sta: 163 },
+  { name: "グライガー", atk: 143, def: 184, sta: 163 }
+];
+
+// PL1〜51のCPMテーブル（0.5刻み）
+const CPM = [
+  0.094, 0.135137432, 0.16639787, 0.192650919, 0.21573247, 0.236572661, 0.25572005, 0.273530381,
+  0.29024988, 0.306057377, 0.3210876, 0.335445036, 0.34921268, 0.362457751, 0.37523559, 0.387592406,
+  0.39956728, 0.411193551, 0.42250001, 0.432926419, 0.44310755, 0.4530599578, 0.46279839, 0.472336083,
+  0.48168495, 0.4908558, 0.49985844, 0.508701765, 0.51739395, 0.525942511, 0.53435433, 0.542635767,
+  0.55079269, 0.558830576, 0.56675452, 0.574569153, 0.58227891, 0.589887917, 0.59740001, 0.604818814,
+  0.61215729, 0.619399365, 0.62656713, 0.633644533, 0.64065295, 0.647576426, 0.65443563, 0.661214806,
+  0.667934, 0.674577537, 0.68116492, 0.687680648, 0.69414365, 0.700538673, 0.70688421, 0.713164996,
+  0.71939909, 0.725571552, 0.7317, 0.734741009, 0.73776948, 0.740785574, 0.74378943, 0.746781211,
+  0.74976104, 0.752729087, 0.75568551, 0.758630378, 0.76156384, 0.764486065, 0.76739717, 0.770297266,
+  0.7731865, 0.776064962, 0.77893275, 0.781790055, 0.78463697, 0.787473578, 0.79030001, 0.792803968,
+  0.79530001, 0.797800015, 0.8003, 0.802799995, 0.8053, 0.8078, 0.81029999, 0.812799985,
+  0.81529999, 0.81779999, 0.82029999, 0.82279999, 0.82529999, 0.82779999, 0.83029999, 0.83279999,
+  0.83529999, 0.83779999, 0.84029999, 0.84279999, 0.84529999
+];
+
+const select = document.getElementById("pokeSelect");
+POKEMON_DATA.forEach((p, idx) => {
+  const opt = document.createElement("option");
+  opt.value = idx;
+  opt.textContent = p.name;
+  select.insertBefore(opt, select.lastElementChild);
+});
+select.value = "0";
+
+function onPokeChange() {
+  const isCustom = select.value === "custom";
+  document.getElementById("customBox").style.display = isCustom ? "grid" : "none";
+  calculate();
+}
+
+function getBestForCap(bA, bD, bS, iA, iD, iS, cap, maxIdx) {
+  let best = null;
+  for (let i = 0; i <= maxIdx; i++) {
+    const m = CPM[i];
+    const atk = (bA + iA) * m;
+    const def = (bD + iD) * m;
+    const sta = Math.max(10, Math.floor((bS + iS) * m));
+    const cp = Math.max(10, Math.floor((atk * Math.sqrt(def) * Math.sqrt(sta)) / 10));
+    if (cp <= cap) {
+      const scp = Math.pow(atk * def * sta, 2 / 3) / 10;
+      best = { cp, pl: 1 + i * 0.5, atk, scp };
+    } else {
+      break;
+    }
+  }
+  return best;
+}
+
+function calculate() {
+  let bA, bD, bS;
+  if (select.value === "custom") {
+    bA = Number(document.getElementById("baseAtk").value) || 100;
+    bD = Number(document.getElementById("baseDef").value) || 100;
+    bS = Number(document.getElementById("baseSta").value) || 100;
+  } else {
+    const p = POKEMON_DATA[select.value];
+    bA = p.atk; bD = p.def; bS = p.sta;
+  }
+
+  const iA = Math.min(15, Math.max(0, Number(document.getElementById("ivAtk").value) || 0));
+  const iD = Math.min(15, Math.max(0, Number(document.getElementById("ivDef").value) || 0));
+  const iS = Math.min(15, Math.max(0, Number(document.getElementById("ivSta").value) || 0));
+  const maxIdx = document.getElementById("bbToggle").checked ? 100 : 98; // PL51 or PL50
+
+  const leagues = [
+    { name: "リトル", cap: 500, showRank: true },
+    { name: "スーパー", cap: 1500, showRank: true },
+    { name: "ハイパー", cap: 2500, showRank: true },
+    { name: "マスター", cap: 99999, showRank: false }
+  ];
+
+  const tbody = document.getElementById("resultBody");
+  tbody.innerHTML = "";
+
+  leagues.forEach(lg => {
+    const target = getBestForCap(bA, bD, bS, iA, iD, iS, lg.cap, maxIdx);
+    let rankText = "―";
+
+    if (lg.showRank && target) {
+      let higherCount = 0;
+      for (let a = 0; a <= 15; a++) {
+        for (let d = 0; d <= 15; d++) {
+          for (let s = 0; s <= 15; s++) {
+            const cand = getBestForCap(bA, bD, bS, a, d, s, lg.cap, maxIdx);
+            if (cand && cand.scp > target.scp + 0.0001) higherCount++;
+          }
+        }
+      }
+      const rank = higherCount + 1;
+      rankText = `<span class="${rank <= 50 ? 'rank-top' : ''}">${rank}位</span>`;
+    }
+
+    const tr = document.createElement("tr");
+    tr.innerHTML = `
+      <td>${lg.name}</td>
+      <td>${target.cp} <small>(PL${target.pl})</small></td>
+      <td>${rankText}</td>
+      <td class="atk-val">${target.atk.toFixed(2)}</td>
+    `;
+    tbody.appendChild(tr);
+  });
+}
+
+if ("serviceWorker" in navigator) {
+  navigator.serviceWorker.register("sw.js");
+}
+calculate();
+</script>
+</body>
+</html>
