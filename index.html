@@ -215,4 +215,392 @@
     .gauge-cell {
       height: 42px;
       background: var(--gauge-empty);
-      color:
+      color: var(--gauge-empty-text);
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      font-size: 0.85rem;
+      font-weight: bold;
+      cursor: pointer;
+      touch-action: manipulation;
+      transition: background 0.1s;
+    }
+
+    /* 左端(1)と右端(15)を丸くする */
+    .gauge-group:first-child .gauge-cell:first-child {
+      border-top-left-radius: 21px;
+      border-bottom-left-radius: 21px;
+      padding-left: 2px;
+    }
+    .gauge-group:last-child .gauge-cell:last-child {
+      border-top-right-radius: 21px;
+      border-bottom-right-radius: 21px;
+      padding-right: 2px;
+    }
+
+    .gauge-cell.filled-orange {
+      background: var(--gauge-orange);
+      color: #ffffff;
+    }
+
+    .gauge-cell.filled-max {
+      background: var(--gauge-max);
+      color: #ffffff;
+    }
+
+    table {
+      width: 100%;
+      border-collapse: collapse;
+      font-size: 0.88rem;
+    }
+
+    th, td {
+      padding: 8px 4px;
+      text-align: center;
+      border-bottom: 1px solid var(--border-color);
+    }
+
+    th {
+      color: var(--accent-color);
+      font-size: 0.78rem;
+    }
+
+    tr:last-child td {
+      border-bottom: none;
+    }
+
+    .rank-top {
+      color: var(--rank-top-color);
+      font-weight: bold;
+    }
+
+    .atk-val {
+      color: var(--atk-val-color);
+      font-weight: bold;
+    }
+
+    .toggle-row {
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      font-size: 0.85rem;
+      margin-top: 8px;
+      padding-top: 8px;
+      border-top: 1px solid var(--border-color);
+    }
+
+    .toggle-left {
+      display: flex;
+      align-items: center;
+      gap: 6px;
+    }
+
+    .reload-btn {
+      background: var(--btn-bg);
+      color: var(--btn-text);
+      border: none;
+      padding: 6px 10px;
+      border-radius: 6px;
+      font-size: 0.75rem;
+      cursor: pointer;
+    }
+  </style>
+</head>
+<body>
+
+  <div class="header-row">
+    <h1>SCP ＆ 攻撃実数値</h1>
+    <div class="header-controls">
+      <span id="dbStatus" class="status-badge">確認中...</span>
+      <button id="themeBtn" class="theme-btn" onclick="toggleTheme()">🌙 ダーク</button>
+    </div>
+  </div>
+
+  <div class="card">
+    <label>ポケモン検索（ひらがな・カタカナ可）</label>
+    <input type="text" id="searchInput" placeholder="例: ドジョッチ / りざーどん / イーブイ" oninput="filterPokemon()">
+
+    <label>ポケモン選択（進化系統＆メガを一括表示）</label>
+    <select id="pokeSelect" onchange="onPokeChange()"></select>
+
+    <div id="customBox" class="custom-stats">
+      <div><label>種族値 攻撃</label><input type="number" id="baseAtk" value="200" oninput="calculate()"></div>
+      <div><label>種族値 防御</label><input type="number" id="baseDef" value="200" oninput="calculate()"></div>
+      <div><label>種族値 HP</label><input type="number" id="baseSta" value="200" oninput="calculate()"></div>
+    </div>
+
+    <!-- 攻撃ゲージ -->
+    <div class="iv-section">
+      <div class="iv-header">
+        <span class="iv-label-text">攻撃<span id="labelAtk" class="iv-val-num">0</span></span>
+        <button id="zeroAtk" class="zero-btn" onclick="setIv('atk', 0)">0にする</button>
+      </div>
+      <div id="gaugeAtk" class="gauge-row"></div>
+    </div>
+
+    <!-- 防御ゲージ -->
+    <div class="iv-section">
+      <div class="iv-header">
+        <span class="iv-label-text">防御<span id="labelDef" class="iv-val-num">15</span></span>
+        <button id="zeroDef" class="zero-btn" onclick="setIv('def', 0)">0にする</button>
+      </div>
+      <div id="gaugeDef" class="gauge-row"></div>
+    </div>
+
+    <!-- HPゲージ -->
+    <div class="iv-section">
+      <div class="iv-header">
+        <span class="iv-label-text">HP<span id="labelSta" class="iv-val-num">15</span></span>
+        <button id="zeroSta" class="zero-btn" onclick="setIv('sta', 0)">0にする</button>
+      </div>
+      <div id="gaugeSta" class="gauge-row"></div>
+    </div>
+
+    <div class="toggle-row">
+      <div class="toggle-left">
+        <input type="checkbox" id="bbToggle" onchange="calculate()" style="width:18px;height:18px;">
+        <label for="bbToggle" style="margin:0; color:var(--text-color); font-size:0.85rem;">最高の相棒（PL51上限）を含める</label>
+      </div>
+      <button class="reload-btn" onclick="fetchAllPokemon(true)">図鑑再取得</button>
+    </div>
+  </div>
+
+  <div id="resultsContainer"></div>
+
+<script>
+const FALLBACK_DATA = [
+  { id: "4", name: "ヒトカゲ", atk: 116, def: 93, sta: 118, chain: 2 },
+  { id: "5", name: "リザード", atk: 158, def: 126, sta: 151, chain: 2 },
+  { id: "6", name: "リザードン", atk: 223, def: 173, sta: 186, chain: 2 },
+  { id: "6_mx", name: "メガリザードンX", atk: 273, def: 213, sta: 186, chain: 2 },
+  { id: "6_my", name: "メガリザードンY", atk: 319, def: 212, sta: 186, chain: 2 },
+  { id: "339", name: "ドジョッチ", atk: 93, def: 82, sta: 137, chain: 171 },
+  { id: "340", name: "ナマズン", atk: 151, def: 141, sta: 242, chain: 171 }
+];
+
+const CPM = [
+  0.094, 0.135137432, 0.16639787, 0.192650919, 0.21573247, 0.236572661, 0.25572005, 0.273530381,
+  0.29024988, 0.306057377, 0.3210876, 0.335445036, 0.34921268, 0.362457751, 0.37523559, 0.387592406,
+  0.39956728, 0.411193551, 0.42250001, 0.432926419, 0.44310755, 0.4530599578, 0.46279839, 0.472336083,
+  0.48168495, 0.4908558, 0.49985844, 0.508701765, 0.51739395, 0.525942511, 0.53435433, 0.542635767,
+  0.55079269, 0.558830576, 0.56675452, 0.574569153, 0.58227891, 0.589887917, 0.59740001, 0.604818814,
+  0.61215729, 0.619399365, 0.62656713, 0.633644533, 0.64065295, 0.647576426, 0.65443563, 0.661214806,
+  0.667934, 0.674577537, 0.68116492, 0.687680648, 0.69414365, 0.700538673, 0.70688421, 0.713164996,
+  0.71939909, 0.725571552, 0.7317, 0.734741009, 0.73776948, 0.740785574, 0.74378943, 0.746781211,
+  0.74976104, 0.752729087, 0.75568551, 0.758630378, 0.76156384, 0.764486065, 0.76739717, 0.770297266,
+  0.7731865, 0.776064962, 0.77893275, 0.781790055, 0.78463697, 0.787473578, 0.79030001, 0.792803968,
+  0.79530001, 0.797800015, 0.8003, 0.802799995, 0.8053, 0.8078, 0.81029999, 0.812799985,
+  0.81529999, 0.81779999, 0.82029999, 0.82279999, 0.82529999, 0.82779999, 0.83029999, 0.83279999,
+  0.83529999, 0.83779999, 0.84029999, 0.84279999, 0.84529999
+];
+
+let ALL_POKEMON = [];
+let rankCache = {};
+const currentIV = { atk: 0, def: 15, sta: 15 };
+
+// ダークモード / ホワイトモード切り替え（初期値はホワイトモード）
+function toggleTheme() {
+  const isDark = document.body.classList.toggle("dark-mode");
+  document.getElementById("themeBtn").textContent = isDark ? "☀️ ホワイト" : "🌙 ダーク";
+}
+
+// 15分割ゲージの生成
+function initGauges() {
+  const types = [
+    { key: "atk", elId: "gaugeAtk" },
+    { key: "def", elId: "gaugeDef" },
+    { key: "sta", elId: "gaugeSta" }
+  ];
+
+  types.forEach(t => {
+    const container = document.getElementById(t.elId);
+    container.innerHTML = "";
+    for (let g = 0; g < 3; g++) {
+      const group = document.createElement("div");
+      group.className = "gauge-group";
+      for (let i = 1; i <= 5; i++) {
+        const val = g * 5 + i;
+        const cell = document.createElement("div");
+        cell.className = "gauge-cell";
+        cell.dataset.val = val;
+        cell.textContent = val;
+        cell.onclick = () => {
+          // 同じ数字を再タップしたら0にする
+          const nextVal = (currentIV[t.key] === val) ? 0 : val;
+          setIv(t.key, nextVal);
+        };
+        group.appendChild(cell);
+      }
+      container.appendChild(group);
+    }
+  });
+  updateGaugeUI();
+}
+
+function setIv(key, val) {
+  currentIV[key] = val;
+  updateGaugeUI();
+  calculate();
+}
+
+function updateGaugeUI() {
+  const map = [
+    { key: "atk", elId: "gaugeAtk", labelId: "labelAtk", zeroId: "zeroAtk" },
+    { key: "def", elId: "gaugeDef", labelId: "labelDef", zeroId: "zeroDef" },
+    { key: "sta", elId: "gaugeSta", labelId: "labelSta", zeroId: "zeroSta" }
+  ];
+
+  map.forEach(m => {
+    const v = currentIV[m.key];
+    document.getElementById(m.labelId).textContent = v;
+    const zeroBtn = document.getElementById(m.zeroId);
+    if (v === 0) zeroBtn.classList.add("active-zero");
+    else zeroBtn.classList.remove("active-zero");
+
+    const cells = document.querySelectorAll(`#${m.elId} .gauge-cell`);
+    cells.forEach(c => {
+      const cellVal = Number(c.dataset.val);
+      c.classList.remove("filled-orange", "filled-max");
+      if (cellVal <= v) {
+        c.classList.add(v === 15 ? "filled-max" : "filled-orange");
+      }
+    });
+  });
+}
+
+function toKatakana(str) {
+  return str.replace(/[\u3041-\u3096]/g, m => String.fromCharCode(m.charCodeAt(0) + 0x60));
+}
+
+async function fetchAllPokemon(force = false) {
+  const statusEl = document.getElementById("dbStatus");
+  const saved = localStorage.getItem("pogo_all_pokemon_v2");
+
+  if (saved && !force) {
+    try {
+      ALL_POKEMON = JSON.parse(saved);
+      statusEl.textContent = `オフライン対応 (${ALL_POKEMON.length}種)`;
+      populateSelect();
+      return;
+    } catch (e) {}
+  }
+
+  statusEl.textContent = "図鑑取得中...";
+  try {
+    const res = await fetch("https://pokemon-go-api.github.io/pokemon-go-api/api/pokedex.json");
+    if (!res.ok) throw new Error("Network error");
+    const raw = await res.json();
+
+    const parent = {};
+    const find = (x) => {
+      if (!parent[x]) parent[x] = x;
+      return parent[x] === x ? x : (parent[x] = find(parent[x]));
+    };
+    const union = (a, b) => {
+      const ra = find(a), rb = find(b);
+      if (ra !== rb) parent[rb] = ra;
+    };
+
+    raw.forEach(p => {
+      if (!p.id) return;
+      find(p.id);
+      if (p.evolutions) p.evolutions.forEach(ev => { if (ev.id) union(p.id, ev.id); });
+      if (p.regionForms) {
+        Object.values(p.regionForms).forEach(rf => {
+          if (!rf.id) return;
+          find(rf.id);
+          if (rf.evolutions) rf.evolutions.forEach(ev => { if (ev.id) union(rf.id, ev.id); });
+        });
+      }
+    });
+
+    const list = [];
+    raw.forEach(p => {
+      if (!p.stats || !p.names || !p.names.Japanese) return;
+      const baseChain = find(p.id);
+      list.push({
+        id: p.id, dex: p.dexNr, name: p.names.Japanese,
+        atk: p.stats.attack, def: p.stats.defense, sta: p.stats.stamina, chain: baseChain
+      });
+
+      if (p.regionForms) {
+        Object.values(p.regionForms).forEach(rf => {
+          if (!rf.stats || !rf.names || !rf.names.Japanese) return;
+          list.push({
+            id: rf.id, dex: p.dexNr, name: rf.names.Japanese,
+            atk: rf.stats.attack, def: rf.stats.defense, sta: rf.stats.stamina, chain: find(rf.id) || baseChain
+          });
+        });
+      }
+
+      if (p.megaEvolutions) {
+        Object.values(p.megaEvolutions).forEach(mg => {
+          if (!mg.stats || !mg.names || !mg.names.Japanese) return;
+          list.push({
+            id: mg.id, dex: p.dexNr, name: mg.names.Japanese,
+            atk: mg.stats.attack, def: mg.stats.defense, sta: mg.stats.stamina, chain: baseChain
+          });
+        });
+      }
+    });
+
+    ALL_POKEMON = list;
+    localStorage.setItem("pogo_all_pokemon_v2", JSON.stringify(ALL_POKEMON));
+    statusEl.textContent = `保存完了 (${ALL_POKEMON.length}種)`;
+  } catch (err) {
+    ALL_POKEMON = FALLBACK_DATA;
+    statusEl.textContent = `内蔵データ (${ALL_POKEMON.length}種)`;
+  }
+  populateSelect();
+}
+
+function populateSelect(filterText = "") {
+  const select = document.getElementById("pokeSelect");
+  const prevVal = select.value;
+  select.innerHTML = "";
+
+  const kataFilter = toKatakana(filterText.trim());
+  const filtered = ALL_POKEMON.filter(p => !kataFilter || toKatakana(p.name).includes(kataFilter));
+
+  filtered.forEach((p) => {
+    const opt = document.createElement("option");
+    opt.value = p.id;
+    opt.textContent = p.name;
+    select.appendChild(opt);
+  });
+
+  const customOpt = document.createElement("option");
+  customOpt.value = "custom";
+  customOpt.textContent = "★ 種族値を手入力（カスタム）";
+  select.appendChild(customOpt);
+
+  if (prevVal && Array.from(select.options).some(o => o.value === prevVal)) {
+    select.value = prevVal;
+  } else if (filtered.length > 0) {
+    const charizard = filtered.find(p => p.name === "リザードン");
+    select.value = charizard ? charizard.id : filtered[0].id;
+  } else {
+    select.value = "custom";
+  }
+  onPokeChange();
+}
+
+function filterPokemon() {
+  populateSelect(document.getElementById("searchInput").value);
+}
+
+function onPokeChange() {
+  const isCustom = document.getElementById("pokeSelect").value === "custom";
+  document.getElementById("customBox").style.display = isCustom ? "grid" : "none";
+  calculate();
+}
+
+function getBestForCap(bA, bD, bS, iA, iD, iS, cap, maxIdx) {
+  let best = null;
+  for (let i = 0; i <= maxIdx; i++) {
+    const m = CPM[i];
+    const atk = (bA + iA) * m;
+    const def = (bD + iD) * m;
+    const rawSta = (bS + iS) * m;
+    const sta = Math.max(10, Math.floor(rawSta));
+    const cp = Math.max(10, Math.floor((
