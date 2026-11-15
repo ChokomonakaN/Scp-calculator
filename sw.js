@@ -1,4 +1,4 @@
-const CACHE_NAME = "scp-calc-v1";
+const CACHE_NAME = "scp-calc-v2";
 const ASSETS = ["./", "./index.html", "./manifest.json"];
 
 self.addEventListener("install", (e) => {
@@ -12,6 +12,7 @@ self.addEventListener("activate", (e) => {
       Promise.all(keys.filter((k) => k !== CACHE_NAME).map((k) => caches.delete(k)))
     )
   );
+  self.clients.claim();
 });
 
 self.addEventListener("fetch", (e) => {
