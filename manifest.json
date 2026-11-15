@@ -1,0 +1,8 @@
+{
+  "name": "GBL SCP・攻撃実数値計算",
+  "short_name": "SCP計算",
+  "start_url": "./index.html",
+  "display": "standalone",
+  "background_color": "#121212",
+  "theme_color": "#4db6ac"
+}
