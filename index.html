@@ -49,12 +49,24 @@
   .c-hl  { background: #fefcf5; }
   .c-ml  { background: #fcf5fc; }
 
-  .rank-txt { font-size: 15px; font-weight: bold; text-decoration: underline; color: #111; display: inline-block; margin-bottom: 2px; }
-  .rank-red { color: #d9534f; }
-  .rank-orange { color: #ef6c00; }
+  .rank-txt { font-size: 15px; font-weight: bold; text-decoration: underline; color: #111; display: inline-block; margin-bottom: 2px; cursor: pointer; }
+  .rank-red { color: #ff2d55; }
+  .rank-orange { color: #d97706; }
   .sub-info { font-size: 11px; color: #666; }
   .atk-info { font-size: 11px; color: #c62828; font-weight: bold; }
   .lv51-box { margin-top: 6px; padding-top: 5px; border-top: 1px dashed #ddd; }
+
+  /* 1〜100位ランキングモーダル */
+  .modal-bg { display: none; position: fixed; inset: 0; background: rgba(0,0,0,0.55); z-index: 200; align-items: center; justify-content: center; padding: 12px; }
+  .modal-box { background: #fff; width: 100%; max-width: 440px; max-height: 85vh; border-radius: 8px; overflow: hidden; display: flex; flex-direction: column; box-shadow: 0 8px 24px rgba(0,0,0,0.3); }
+  .modal-head { background: #546e7a; color: #fff; padding: 10px 12px; font-weight: bold; font-size: 14px; display: flex; justify-content: space-between; align-items: center; }
+  .modal-close { background: rgba(255,255,255,0.25); border: none; color: #fff; width: 26px; height: 26px; border-radius: 50%; font-size: 15px; font-weight: bold; cursor: pointer; }
+  .modal-sub { background: #f5f5f5; padding: 6px 10px; font-size: 11px; color: #555; text-align: center; border-bottom: 1px solid #ddd; }
+  .modal-scroll { overflow-y: auto; flex: 1; }
+  .rank-table { width: 100%; border-collapse: collapse; font-size: 12px; text-align: center; }
+  .rank-table th { position: sticky; top: 0; background: #eee; color: #333; padding: 6px 2px; border-bottom: 1px solid #ccc; font-size: 11px; }
+  .rank-table td { padding: 7px 2px; border-bottom: 1px solid #eee; }
+  .rank-table tr:active, .rank-table tr.current-iv { background: #fdecea; font-weight: bold; }
 </style>
 </head>
 <body>
@@ -94,6 +106,33 @@
   <div class="lh-ml">ML</div>
 </div>
 <div id="resultsContainer"></div>
+
+<!-- 100位ランキングポップアップ -->
+<div id="rankModal" class="modal-bg" onclick="if(event.target===this) closeModal()">
+  <div class="modal-box">
+    <div class="modal-head">
+      <span id="modalTitle">ランキング</span>
+      <button type="button" class="modal-close" onclick="closeModal()">×</button>
+    </div>
+    <div class="modal-sub">行をタップするとその個体値をセットします</div>
+    <div class="modal-scroll">
+      <table class="rank-table">
+        <thead>
+          <tr>
+            <th>順位</th>
+            <th>個体値/PL</th>
+            <th>SCP</th>
+            <th>CP</th>
+            <th>攻</th>
+            <th>防</th>
+            <th>HP</th>
+          </tr>
+        </thead>
+        <tbody id="modalBody"></tbody>
+      </table>
+    </div>
+  </div>
+</div>
 
 <script>
 const FALLBACK_DATA = [
@@ -340,13 +379,13 @@ function getBestForCap(bA, bD, bS, iA, iD, iS, cap, maxIdx) {
     const sta = Math.max(10, Math.floor(rawSta));
     const cp = Math.max(10, Math.floor((atk * Math.sqrt(def) * Math.sqrt(rawSta)) / 10));
     if (cp <= cap) {
-      best = { cp, pl: 1 + i * 0.5, idx: i, atk, scp: Math.pow(atk * def * sta, 2 / 3) / 10 };
+      best = { cp, pl: 1 + i * 0.5, idx: i, atk, def, sta, scp: Math.pow(atk * def * sta, 2 / 3) / 10 };
     } else break;
   }
   return best;
 }
 
-function getAllScpSorted(bA, bD, bS, cap, maxIdx, minIv) {
+function getAllEntriesSorted(bA, bD, bS, cap, maxIdx, minIv) {
   const key = `${bA}_${bD}_${bS}_${cap}_${maxIdx}_${minIv}`;
   if (rankCache[key]) return rankCache[key];
   const arr = [];
@@ -354,27 +393,79 @@ function getAllScpSorted(bA, bD, bS, cap, maxIdx, minIv) {
     for (let d = minIv; d <= 15; d++)
       for (let s = minIv; s <= 15; s++) {
         const c = getBestForCap(bA, bD, bS, a, d, s, cap, maxIdx);
-        if (c) arr.push(c.scp);
+        if (c) arr.push({ a, d, s, ...c });
       }
-  arr.sort((x, y) => y - x);
+  arr.sort((x, y) => (y.scp - x.scp) || (y.cp - x.cp));
   return (rankCache[key] = arr);
 }
 
 function getRank(poke, target, cap, maxIdx) {
-  const sorted = getAllScpSorted(poke.atk, poke.def, poke.sta, cap, maxIdx, minIvFloor);
+  const sorted = getAllEntriesSorted(poke.atk, poke.def, poke.sta, cap, maxIdx, minIvFloor);
   let higher = 0;
   for (let i = 0; i < sorted.length; i++) {
-    if (sorted[i] > target.scp + 1e-9) higher++; else break;
+    if (sorted[i].scp > target.scp + 1e-9) higher++; else break;
   }
   return higher + 1;
 }
 
-function formatEntry(poke, selectedPoke, target, rank, showPreCp) {
+// 1〜100位ランキングポップアップ表示
+function openRankModal(pokeId, leagueName, cap, maxIdx) {
+  const poke = ALL_POKEMON.find(p => p.id === pokeId);
+  if (!poke) return;
+
+  const sorted = getAllEntriesSorted(poke.atk, poke.def, poke.sta, cap, maxIdx, minIvFloor);
+  const plLabel = maxIdx === 100 ? "最大PL51" : "最大PL50";
+  const floorLabel = minIvFloor > 0 ? ` / 最低IV${minIvFloor}` : "";
+  document.getElementById("modalTitle").textContent = `${poke.name} (${leagueName}・${plLabel}${floorLabel})`;
+
+  const tbody = document.getElementById("modalBody");
+  let rowsHtml = "";
+  let currentRank = 1;
+
+  for (let i = 0; i < sorted.length; i++) {
+    if (i > 0 && sorted[i].scp < sorted[i - 1].scp - 1e-9) {
+      currentRank = i + 1;
+    }
+    if (currentRank > 100) break;
+
+    const item = sorted[i];
+    const isCur = (item.a === ivs.atk && item.d === ivs.def && item.s === ivs.sta);
+    rowsHtml += `
+      <tr class="${isCur ? 'current-iv' : ''}" onclick="applyModalIv(${item.a}, ${item.d}, ${item.s})">
+        <td>${currentRank}</td>
+        <td>${item.a}/${item.d}/${item.s} <small>(${item.pl})</small></td>
+        <td><b>${Math.round(item.scp)}</b></td>
+        <td>${item.cp}</td>
+        <td>${item.atk.toFixed(1)}</td>
+        <td>${item.def.toFixed(1)}</td>
+        <td>${item.sta}</td>
+      </tr>
+    `;
+  }
+
+  tbody.innerHTML = rowsHtml;
+  document.getElementById("rankModal").style.display = "flex";
+}
+
+function applyModalIv(a, d, s) {
+  ivs.atk = a;
+  ivs.def = d;
+  ivs.sta = s;
+  updateIvBarsUI();
+  closeModal();
+  calculate();
+}
+
+function closeModal() {
+  document.getElementById("rankModal").style.display = "none";
+}
+
+function formatEntry(poke, selectedPoke, target, rank, showPreCp, leagueLabel, cap, maxIdx) {
   let rankCls = "rank-txt";
   if (rank <= 9) rankCls += " rank-red";
   else if (rank <= 100) rankCls += " rank-orange";
   const rankLabel = rank === 1 ? `👑1位` : `${rank}位`;
-  const rankHtml = `<div class="${rankCls}">${rankLabel}</div>`;
+  const rankHtml = `<div class="${rankCls}" onclick="openRankModal('${poke.id}', '${leagueLabel}', ${cap}, ${maxIdx})">${rankLabel}</div>`;
 
   let preCpHtml = "";
   if (showPreCp && selectedPoke && poke.stage > selectedPoke.stage && target.pl < 50) {
@@ -399,10 +490,10 @@ function calculate() {
     .sort((a, b) => (b.stage - a.stage) || (b.dex - a.dex));
 
   const leagues = [
-    { key: "500", cap: 500, cls: "c-500" },
-    { key: "SL",  cap: 1500, cls: "c-sl" },
-    { key: "HL",  cap: 2500, cls: "c-hl" },
-    { key: "ML",  cap: 99999, cls: "c-ml" }
+    { key: "500", label: "CP500", cap: 500, cls: "c-500" },
+    { key: "SL",  label: "SL",    cap: 1500, cls: "c-sl" },
+    { key: "HL",  label: "HL",    cap: 2500, cls: "c-hl" },
+    { key: "ML",  label: "ML",    cap: 99999, cls: "c-ml" }
   ];
 
   const container = document.getElementById("resultsContainer");
@@ -420,11 +511,11 @@ function calculate() {
       }
 
       const r50 = getRank(poke, t50, lg.cap, 98);
-      let cellInner = formatEntry(poke, sel, t50, r50, lg.cap < 99999);
+      let cellInner = formatEntry(poke, sel, t50, r50, lg.cap < 99999, lg.label, lg.cap, 98);
 
       if (t51 && t51.pl > t50.pl) {
         const r51 = getRank(poke, t51, lg.cap, 100);
-        cellInner += `<div class="lv51-box">${formatEntry(poke, sel, t51, r51, false)}</div>`;
+        cellInner += `<div class="lv51-box">${formatEntry(poke, sel, t51, r51, false, lg.label, lg.cap, 100)}</div>`;
       }
 
       cellsHtml += `<div class="league-cell ${lg.cls}">${cellInner}</div>`;
