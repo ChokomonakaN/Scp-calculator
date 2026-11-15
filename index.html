@@ -1,90 +1,100 @@
 <!DOCTYPE html>
 <html lang="ja">
 <head>
-  <meta charset="UTF-8">
-  <meta name="viewport" content="width=device-width, initial-scale=1.0">
-  <title>GBL SCP＆攻撃実数値 計算機</title>
-  <link rel="manifest" href="manifest.json">
-  <style>
-    body { font-family: -apple-system, BlinkMacSystemFont, sans-serif; background: #121212; color: #f0f0f0; margin: 0; padding: 14px; }
-    h1 { font-size: 1.15rem; margin: 0 0 10px 0; color: #4db6ac; display: flex; justify-content: space-between; align-items: center; }
-    .status-badge { font-size: 0.72rem; padding: 3px 8px; border-radius: 12px; background: #263238; color: #80cbc4; font-weight: normal; }
-    .card { background: #1e1e1e; border-radius: 10px; padding: 14px; margin-bottom: 12px; border: 1px solid #2c2c2c; }
-    .card.active-poke { border-color: #4db6ac; box-shadow: 0 0 8px rgba(77,182,172,0.25); }
-    .poke-title { font-size: 1rem; font-weight: bold; margin-bottom: 8px; color: #fff; display: flex; justify-content: space-between; align-items: center; }
-    .poke-stats { font-size: 0.75rem; color: #999; font-weight: normal; }
-    label { display: block; font-size: 0.8rem; color: #aaa; margin-bottom: 4px; }
-    input[type="text"], select, input[type="number"] {
-      width: 100%; padding: 10px; font-size: 0.95rem; border-radius: 6px;
-      border: 1px solid #333; background: #2a2a2a; color: #fff; box-sizing: border-box; margin-bottom: 10px;
-    }
-    .iv-grid { display: grid; grid-template-columns: repeat(3, 1fr); gap: 8px; }
-    .custom-stats { display: none; grid-template-columns: repeat(3, 1fr); gap: 8px; margin-top: 4px; }
-    table { width: 100%; border-collapse: collapse; font-size: 0.88rem; }
-    th, td { padding: 8px 4px; text-align: center; border-bottom: 1px solid #2c2c2c; }
-    th { color: #4db6ac; font-size: 0.78rem; }
-    tr:last-child td { border-bottom: none; }
-    .rank-top { color: #ffd54f; font-weight: bold; }
-    .atk-val { color: #ff8a65; font-weight: bold; }
-    .toggle-row { display: flex; align-items: center; justify-content: space-between; font-size: 0.85rem; margin-top: 4px; }
-    .toggle-left { display: flex; align-items: center; gap: 6px; }
-    .reload-btn { background: #333; color: #ccc; border: none; padding: 5px 10px; border-radius: 6px; font-size: 0.75rem; cursor: pointer; }
-  </style>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+<title>SCP計算機</title>
+<link rel="manifest" href="manifest.json">
+<style>
+  * { box-sizing: border-box; margin: 0; padding: 0; -webkit-tap-highlight-color: transparent; }
+  body { font-family: -apple-system, BlinkMacSystemFont, sans-serif; background: #fff; color: #222; padding: 8px; font-size: 13px; }
+  
+  /* 統合ポケモン検索・選択 */
+  .poke-picker { position: relative; margin-bottom: 10px; }
+  .poke-input { width: 100%; height: 42px; padding: 0 12px; font-size: 16px; font-weight: bold; border: 2px solid #ccc; border-radius: 6px; background: #f9f9f9; color: #222; }
+  .poke-input:focus { outline: none; border-color: #e07a72; background: #fff; }
+  .poke-list { display: none; position: absolute; top: 44px; left: 0; right: 0; max-height: 240px; overflow-y: auto; background: #fff; border: 2px solid #e07a72; border-radius: 6px; z-index: 100; box-shadow: 0 4px 12px rgba(0,0,0,0.15); }
+  .poke-item { padding: 11px 12px; font-size: 15px; border-bottom: 1px solid #eee; cursor: pointer; }
+  .poke-item:active, .poke-item.selected { background: #fdecea; font-weight: bold; }
+
+  /* 大型個体値バー */
+  .iv-section { margin-bottom: 10px; user-select: none; }
+  .iv-row { margin-bottom: 8px; }
+  .iv-header { display: flex; justify-content: space-between; align-items: center; margin-bottom: 3px; font-weight: bold; font-size: 13px; color: #333; }
+  .zero-btn { font-size: 11px; padding: 2px 8px; background: #eee; border: 1px solid #ccc; border-radius: 4px; color: #444; cursor: pointer; }
+  .iv-bar { display: grid; grid-template-columns: repeat(3, 1fr); gap: 5px; }
+  .iv-group { display: grid; grid-template-columns: repeat(5, 1fr); gap: 1px; border-radius: 6px; overflow: hidden; }
+  .iv-cell { height: 40px; display: flex; align-items: center; justify-content: center; background: #d8c8c7; color: #fff; font-weight: bold; font-size: 14px; cursor: pointer; }
+  .iv-cell.active { background: #e07a72; }
+
+  /* みんポケ風テーブル */
+  .league-header { display: grid; grid-template-columns: repeat(4, 1fr); border-top: 1px solid #ddd; border-bottom: 1px solid #ddd; font-weight: bold; font-size: 13px; text-align: center; }
+  .lh-500 { background: #eefaf0; padding: 6px 0; color: #2e7d32; }
+  .lh-sl  { background: #eef6fc; padding: 6px 0; color: #1565c0; }
+  .lh-hl  { background: #fdf9ee; padding: 6px 0; color: #ef6c00; }
+  .lh-ml  { background: #faeffa; padding: 6px 0; color: #8e24aa; }
+
+  .poke-block { border-bottom: 1px solid #ddd; }
+  .poke-name-bar { text-align: center; font-weight: bold; font-size: 14px; padding: 6px 4px; background: #fff; border-bottom: 1px solid #eee; color: #222; }
+  .poke-name-bar.is-selected { background: #f5f5f5; }
+  .league-grid { display: grid; grid-template-columns: repeat(4, 1fr); }
+  .league-cell { padding: 8px 2px; text-align: center; border-right: 1px solid #eaeaea; line-height: 1.35; }
+  .league-cell:last-child { border-right: none; }
+  .c-500 { background: #f4fbf6; }
+  .c-sl  { background: #f4f9fd; }
+  .c-hl  { background: #fefcf5; }
+  .c-ml  { background: #fcf5fc; }
+
+  .rank-txt { font-size: 15px; font-weight: bold; text-decoration: underline; color: #111; display: inline-block; margin-bottom: 2px; }
+  .rank-1 { color: #d9534f; font-size: 15px; font-weight: bold; text-decoration: underline; display: inline-block; margin-bottom: 2px; }
+  .sub-info { font-size: 11px; color: #666; }
+  .atk-info { font-size: 11px; color: #c62828; font-weight: bold; }
+  .lv51-box { margin-top: 6px; padding-top: 5px; border-top: 1px dashed #ddd; }
+</style>
 </head>
 <body>
 
-  <h1>
-    <span>SCP ＆ 攻撃実数値 計算機</span>
-    <span id="dbStatus" class="status-badge">データ確認中...</span>
-  </h1>
+<div class="poke-picker">
+  <input type="text" id="pokeInput" class="poke-input" placeholder="ポケモンを選択" autocomplete="off">
+  <div id="pokeList" class="poke-list"></div>
+</div>
 
-  <div class="card">
-    <label>ポケモン検索（ひらがな・カタカナ可）</label>
-    <input type="text" id="searchInput" placeholder="例: ドジョッチ / りざーどん / ギルガルド" oninput="filterPokemon()">
-
-    <label>ポケモン選択（進化系統＆メガを一括表示）</label>
-    <select id="pokeSelect" onchange="onPokeChange()"></select>
-
-    <div id="customBox" class="custom-stats">
-      <div><label>種族値 攻撃</label><input type="number" id="baseAtk" value="200" oninput="calculate()"></div>
-      <div><label>種族値 防御</label><input type="number" id="baseDef" value="200" oninput="calculate()"></div>
-      <div><label>種族値 HP</label><input type="number" id="baseSta" value="200" oninput="calculate()"></div>
-    </div>
-
-    <div class="iv-grid">
-      <div><label>攻撃 IV (0-15)</label><input type="number" id="ivAtk" min="0" max="15" value="0" oninput="calculate()"></div>
-      <div><label>防御 IV (0-15)</label><input type="number" id="ivDef" min="0" max="15" value="15" oninput="calculate()"></div>
-      <div><label>HP IV (0-15)</label><input type="number" id="ivSta" min="0" max="15" value="15" oninput="calculate()"></div>
-    </div>
-
-    <div class="toggle-row">
-      <div class="toggle-left">
-        <input type="checkbox" id="bbToggle" onchange="calculate()">
-        <label for="bbToggle" style="margin:0; color:#f0f0f0;">最高の相棒（PL51上限）を含める</label>
-      </div>
-      <button class="reload-btn" onclick="fetchAllPokemon(true)">図鑑再取得</button>
-    </div>
+<div class="iv-section">
+  <div class="iv-row">
+    <div class="iv-header"><span id="lblAtk">攻撃 : 15</span><button class="zero-btn" onclick="setIv('atk',0)">0にする</button></div>
+    <div class="iv-bar" id="barAtk"></div>
   </div>
+  <div class="iv-row">
+    <div class="iv-header"><span id="lblDef">防御 : 15</span><button class="zero-btn" onclick="setIv('def',0)">0にする</button></div>
+    <div class="iv-bar" id="barDef"></div>
+  </div>
+  <div class="iv-row">
+    <div class="iv-header"><span id="lblSta">HP : 15</span><button class="zero-btn" onclick="setIv('sta',0)">0にする</button></div>
+    <div class="iv-bar" id="barSta"></div>
+  </div>
+</div>
 
-  <div id="resultsContainer"></div>
+<div class="league-header">
+  <div class="lh-500">500</div>
+  <div class="lh-sl">SL</div>
+  <div class="lh-hl">HL</div>
+  <div class="lh-ml">ML</div>
+</div>
+<div id="resultsContainer"></div>
 
 <script>
-const EXTRA_DATA = [
-  { id: "HONEDGE", dex: 679, name: "ヒトツキ", atk: 135, def: 139, sta: 128, chain: "CHAIN_HONEDGE" },
-  { id: "DOUBLADE", dex: 680, name: "ニダンギル", atk: 188, def: 206, sta: 153, chain: "CHAIN_HONEDGE" },
-  { id: "AEGISLASH_SHIELD", dex: 681, name: "ギルガルド(シールド)", atk: 97, def: 291, sta: 155, chain: "CHAIN_HONEDGE" },
-  { id: "AEGISLASH_BLADE", dex: 681, name: "ギルガルド(ブレード)", atk: 291, def: 97, sta: 155, chain: "CHAIN_HONEDGE" }
-];
-
 const FALLBACK_DATA = [
-  { id: "CHARMANDER", dex: 4, name: "ヒトカゲ", atk: 116, def: 93, sta: 118, chain: "C4" },
-  { id: "CHARMELEON", dex: 5, name: "リザード", atk: 158, def: 126, sta: 151, chain: "C4" },
-  { id: "CHARIZARD", dex: 6, name: "リザードン", atk: 223, def: 173, sta: 186, chain: "C4" },
-  { id: "CHARIZARD_MEGA_X", dex: 6, name: "メガリザードンX", atk: 273, def: 213, sta: 186, chain: "C4" },
-  { id: "CHARIZARD_MEGA_Y", dex: 6, name: "メガリザードンY", atk: 319, def: 212, sta: 186, chain: "C4" },
-  { id: "BARBOACH", dex: 339, name: "ドジョッチ", atk: 93, def: 82, sta: 137, chain: "C339" },
-  { id: "WHISCASH", dex: 340, name: "ナマズン", atk: 151, def: 141, sta: 242, chain: "C339" },
-  ...EXTRA_DATA
+  { id: "CHARIZARD_MEGA_Y", dex: 6, name: "メガリザードンY", atk: 319, def: 212, sta: 186, chain: "C4", stage: 3.2 },
+  { id: "CHARIZARD_MEGA_X", dex: 6, name: "メガリザードンX", atk: 273, def: 213, sta: 186, chain: "C4", stage: 3.1 },
+  { id: "CHARIZARD", dex: 6, name: "リザードン", atk: 223, def: 173, sta: 186, chain: "C4", stage: 2 },
+  { id: "CHARMELEON", dex: 5, name: "リザード", atk: 158, def: 126, sta: 151, chain: "C4", stage: 1 },
+  { id: "CHARMANDER", dex: 4, name: "ヒトカゲ", atk: 116, def: 93, sta: 118, chain: "C4", stage: 0 },
+  { id: "WHISCASH", dex: 340, name: "ナマズン", atk: 151, def: 141, sta: 242, chain: "C339", stage: 1 },
+  { id: "BARBOACH", dex: 339, name: "ドジョッチ", atk: 93, def: 82, sta: 137, chain: "C339", stage: 0 },
+  { id: "AEGISLASH_SHIELD", dex: 681, name: "ギルガルド(シールド)", atk: 97, def: 291, sta: 155, chain: "C679", stage: 2 },
+  { id: "AEGISLASH_BLADE", dex: 681, name: "ギルガルド(ブレード)", atk: 291, def: 97, sta: 155, chain: "C679", stage: 2 },
+  { id: "DOUBLADE", dex: 680, name: "ニダンギル", atk: 188, def: 206, sta: 153, chain: "C679", stage: 1 },
+  { id: "HONEDGE", dex: 679, name: "ヒトツキ", atk: 135, def: 139, sta: 128, chain: "C679", stage: 0 }
 ];
 
 const CPM = [
@@ -104,98 +114,195 @@ const CPM = [
 ];
 
 let ALL_POKEMON = [];
+let selectedPokeId = "CHARMANDER";
+let ivs = { atk: 15, def: 15, sta: 15 };
 let rankCache = {};
 
-function toKatakana(str) {
-  return str.replace(/[\u3041-\u3096]/g, m => String.fromCharCode(m.charCodeAt(0) + 0x60));
+function toKatakana(s) {
+  return s.replace(/[\u3041-\u3096]/g, m => String.fromCharCode(m.charCodeAt(0) + 0x60));
 }
 
-async function fetchAllPokemon(force = false) {
-  const statusEl = document.getElementById("dbStatus");
-  const saved = localStorage.getItem("pogo_all_pokemon_v3");
-  if (saved && !force) {
+// 個体値バー初期化
+function initIvBars() {
+  const map = { atk: "barAtk", def: "barDef", sta: "barSta" };
+  Object.keys(map).forEach(key => {
+    const bar = document.getElementById(map[key]);
+    bar.innerHTML = "";
+    for (let g = 0; g < 3; g++) {
+      const grp = document.createElement("div");
+      grp.className = "iv-group";
+      for (let i = 1; i <= 5; i++) {
+        const val = g * 5 + i;
+        const cell = document.createElement("div");
+        cell.className = "iv-cell";
+        cell.id = `iv_${key}_${val}`;
+        cell.textContent = val;
+        cell.onclick = () => setIv(key, ivs[key] === val ? 0 : val);
+        grp.appendChild(cell);
+      }
+      bar.appendChild(grp);
+    }
+  });
+  updateIvBarsUI();
+}
+
+function setIv(key, val) {
+  ivs[key] = val;
+  updateIvBarsUI();
+  calculate();
+}
+
+function updateIvBarsUI() {
+  const labels = { atk: ["lblAtk", "攻撃"], def: ["lblDef", "防御"], sta: ["lblSta", "HP"] };
+  Object.keys(labels).forEach(k => {
+    document.getElementById(labels[k][0]).textContent = `${labels[k][1]} : ${ivs[k]}`;
+    for (let v = 1; v <= 15; v++) {
+      const el = document.getElementById(`iv_${k}_${v}`);
+      if (el) el.className = "iv-cell" + (v <= ivs[k] ? " active" : "");
+    }
+  });
+}
+
+// 検索＆選択UI
+const pokeInput = document.getElementById("pokeInput");
+const pokeList = document.getElementById("pokeList");
+
+pokeInput.addEventListener("focus", () => {
+  pokeInput.select();
+  renderDropdown("");
+  pokeList.style.display = "block";
+});
+
+pokeInput.addEventListener("input", () => {
+  renderDropdown(pokeInput.value);
+  pokeList.style.display = "block";
+});
+
+document.addEventListener("click", (e) => {
+  if (!e.target.closest(".poke-picker")) {
+    pokeList.style.display = "none";
+    const cur = ALL_POKEMON.find(p => p.id === selectedPokeId);
+    if (cur) pokeInput.value = cur.name;
+  }
+});
+
+function renderDropdown(query) {
+  const q = toKatakana(query.trim());
+  const matches = ALL_POKEMON.filter(p => !q || toKatakana(p.name).includes(q)).slice(0, 80);
+  pokeList.innerHTML = "";
+  matches.forEach(p => {
+    const div = document.createElement("div");
+    div.className = "poke-item" + (p.id === selectedPokeId ? " selected" : "");
+    div.textContent = p.name;
+    div.onclick = () => {
+      selectedPokeId = p.id;
+      pokeInput.value = p.name;
+      pokeList.style.display = "none";
+      calculate();
+    };
+    pokeList.appendChild(div);
+  });
+}
+
+// 図鑑データ読み込み
+async function loadPokemonData() {
+  const saved = localStorage.getItem("pogo_min_v4");
+  if (saved) {
     try {
       ALL_POKEMON = JSON.parse(saved);
-      statusEl.textContent = `オフライン対応済 (${ALL_POKEMON.length}種)`;
-      populateSelect();
+      selectDefault();
       return;
     } catch (e) {}
   }
-  statusEl.textContent = "全ポケモン取得中...";
+  ALL_POKEMON = FALLBACK_DATA;
+  selectDefault();
+
   try {
     const res = await fetch("https://pokemon-go-api.github.io/pokemon-go-api/api/pokedex.json");
     const raw = await res.json();
-    const parent = {};
+    const parent = {}, childrenMap = {};
     const find = x => (!parent[x] ? (parent[x] = x) : parent[x] === x ? x : (parent[x] = find(parent[x])));
     const union = (a, b) => { const ra = find(a), rb = find(b); if (ra !== rb) parent[rb] = ra; };
 
     raw.forEach(p => {
       if (!p.id) return;
       find(p.id);
-      if (p.evolutions) p.evolutions.forEach(ev => { if (ev.id) union(p.id, ev.id); });
+      if (p.evolutions) p.evolutions.forEach(ev => {
+        if (ev.id) {
+          union(p.id, ev.id);
+          (childrenMap[p.id] = childrenMap[p.id] || []).push(ev.id);
+        }
+      });
       if (p.regionForms) Object.values(p.regionForms).forEach(rf => {
         if (!rf.id) return; find(rf.id);
-        if (rf.evolutions) rf.evolutions.forEach(ev => { if (ev.id) union(rf.id, ev.id); });
+        if (rf.evolutions) rf.evolutions.forEach(ev => {
+          if (ev.id) {
+            union(rf.id, ev.id);
+            (childrenMap[rf.id] = childrenMap[rf.id] || []).push(ev.id);
+          }
+        });
       });
     });
+
+    // 進化段階（0:未進化 -> 1:中間 -> 2:最終）の算出
+    const stageMap = {};
+    const hasParent = {};
+    Object.values(childrenMap).forEach(arr => arr.forEach(c => hasParent[c] = true));
+    const setStage = (id, st) => {
+      if ((stageMap[id] || 0) <= st) stageMap[id] = st;
+      (childrenMap[id] || []).forEach(cid => setStage(cid, st + 1));
+    };
+    Object.keys(parent).forEach(id => { if (!hasParent[id]) setStage(id, 0); });
 
     const list = [];
     raw.forEach(p => {
       if (!p.stats || !p.names || !p.names.Japanese) return;
-      const baseChain = find(p.id);
-      list.push({ id: p.id, dex: p.dexNr || 9999, name: p.names.Japanese, atk: p.stats.attack, def: p.stats.defense, sta: p.stats.stamina, chain: baseChain });
+      const chain = find(p.id);
+      const st = stageMap[p.id] || 0;
+      list.push({ id: p.id, dex: p.dexNr || 9999, name: p.names.Japanese, atk: p.stats.attack, def: p.stats.defense, sta: p.stats.stamina, chain, stage: st });
+
       if (p.regionForms) Object.values(p.regionForms).forEach(rf => {
-        if (rf.stats && rf.names && rf.names.Japanese)
-          list.push({ id: rf.id, dex: p.dexNr || 9999, name: rf.names.Japanese, atk: rf.stats.attack, def: rf.stats.defense, sta: rf.stats.stamina, chain: find(rf.id) || baseChain });
+        if (rf.stats && rf.names && rf.names.Japanese) {
+          const rfSt = stageMap[rf.id] !== undefined ? stageMap[rf.id] : st;
+          list.push({ id: rf.id, dex: p.dexNr || 9999, name: rf.names.Japanese, atk: rf.stats.attack, def: rf.stats.defense, sta: rf.stats.stamina, chain: find(rf.id) || chain, stage: rfSt });
+        }
       });
-      if (p.megaEvolutions) Object.values(p.megaEvolutions).forEach(mg => {
-        if (mg.stats && mg.names && mg.names.Japanese)
-          list.push({ id: mg.id, dex: (p.dexNr || 9999) + 0.1, name: mg.names.Japanese, atk: mg.stats.attack, def: mg.stats.defense, sta: mg.stats.stamina, chain: baseChain });
-      });
+      if (p.megaEvolutions) {
+        const megas = Object.values(p.megaEvolutions);
+        megas.forEach((mg, idx) => {
+          if (mg.stats && mg.names && mg.names.Japanese) {
+            list.push({ id: mg.id, dex: p.dexNr || 9999, name: mg.names.Japanese, atk: mg.stats.attack, def: mg.stats.defense, sta: mg.stats.stamina, chain, stage: 3 + idx * 0.1 });
+          }
+        });
+      }
     });
 
-    EXTRA_DATA.forEach(ex => {
+    FALLBACK_DATA.filter(x => x.chain === "C679").forEach(ex => {
       if (!list.some(p => p.name === ex.name)) list.push(ex);
     });
 
     ALL_POKEMON = list;
-    localStorage.setItem("pogo_all_pokemon_v3", JSON.stringify(ALL_POKEMON));
-    statusEl.textContent = `全図鑑保存完了 (${ALL_POKEMON.length}種)`;
-  } catch (err) {
-    ALL_POKEMON = FALLBACK_DATA;
-    statusEl.textContent = `内蔵データ動作中 (${ALL_POKEMON.length}種)`;
+    localStorage.setItem("pogo_min_v4", JSON.stringify(ALL_POKEMON));
+    selectDefault();
+  } catch (e) {}
+}
+
+function selectDefault() {
+  const cur = ALL_POKEMON.find(p => p.id === selectedPokeId) || ALL_POKEMON.find(p => p.name === "ヒトカゲ") || ALL_POKEMON[0];
+  if (cur) {
+    selectedPokeId = cur.id;
+    pokeInput.value = cur.name;
+    calculate();
   }
-  populateSelect();
 }
 
-function populateSelect(filterText = "") {
-  const select = document.getElementById("pokeSelect");
-  const prevVal = select.value;
-  select.innerHTML = "";
-  const kataFilter = toKatakana(filterText.trim());
-  const filtered = ALL_POKEMON.filter(p => !kataFilter || toKatakana(p.name).includes(kataFilter));
-
-  filtered.forEach(p => {
-    const opt = document.createElement("option");
-    opt.value = p.id; opt.textContent = p.name;
-    select.appendChild(opt);
-  });
-  const customOpt = document.createElement("option");
-  customOpt.value = "custom"; customOpt.textContent = "★ 種族値を手入力（カスタム）";
-  select.appendChild(customOpt);
-
-  if (prevVal && Array.from(select.options).some(o => o.value === prevVal)) select.value = prevVal;
-  else if (filtered.length > 0) {
-    const def = filtered.find(p => p.name === "リザードン");
-    select.value = def ? def.id : filtered[0].id;
-  } else select.value = "custom";
-  onPokeChange();
-}
-
-function filterPokemon() { populateSelect(document.getElementById("searchInput").value); }
-function onPokeChange() {
-  document.getElementById("customBox").style.display = document.getElementById("pokeSelect").value === "custom" ? "grid" : "none";
-  calculate();
+// 指定PLインデックスでのCP計算
+function calcCpAtIdx(bA, bD, bS, iA, iD, iS, idx) {
+  const m = CPM[idx];
+  const atk = (bA + iA) * m;
+  const def = (bD + iD) * m;
+  const rawSta = (bS + iS) * m;
+  return Math.max(10, Math.floor((atk * Math.sqrt(def) * Math.sqrt(rawSta)) / 10));
 }
 
 function getBestForCap(bA, bD, bS, iA, iD, iS, cap, maxIdx) {
@@ -208,7 +315,7 @@ function getBestForCap(bA, bD, bS, iA, iD, iS, cap, maxIdx) {
     const sta = Math.max(10, Math.floor(rawSta));
     const cp = Math.max(10, Math.floor((atk * Math.sqrt(def) * Math.sqrt(rawSta)) / 10));
     if (cp <= cap) {
-      best = { cp, pl: 1 + i * 0.5, atk, scp: Math.pow(atk * def * sta, 2 / 3) / 10 };
+      best = { cp, pl: 1 + i * 0.5, idx: i, atk, scp: Math.pow(atk * def * sta, 2 / 3) / 10 };
     } else break;
   }
   return best;
@@ -228,76 +335,89 @@ function getAllScpSorted(bA, bD, bS, cap, maxIdx) {
   return (rankCache[key] = arr);
 }
 
-function parseIv(id) {
-  const v = parseInt(document.getElementById(id).value, 10);
-  return isNaN(v) ? 0 : Math.min(15, Math.max(0, v));
+function getRank(poke, target, cap, maxIdx) {
+  const sorted = getAllScpSorted(poke.atk, poke.def, poke.sta, cap, maxIdx);
+  let higher = 0;
+  for (let i = 0; i < sorted.length; i++) {
+    if (sorted[i] > target.scp + 1e-9) higher++; else break;
+  }
+  return higher + 1;
+}
+
+function formatEntry(poke, selectedPoke, target, rank, showPreCp) {
+  const rankHtml = rank === 1
+    ? `<div class="rank-1">👑1位</div>`
+    : `<div class="rank-txt">${rank}位</div>`;
+  let preCpHtml = "";
+  if (showPreCp && selectedPoke && poke.stage > selectedPoke.stage && target.pl < 50) {
+    const preCp = calcCpAtIdx(selectedPoke.atk, selectedPoke.def, selectedPoke.sta, ivs.atk, ivs.def, ivs.sta, target.idx);
+    preCpHtml = `<div class="sub-info">前CP${preCp}</div>`;
+  }
+  return `
+    ${rankHtml}
+    <div class="sub-info">CP${target.cp}(Lv${target.pl})</div>
+    <div class="sub-info">SCP${Math.round(target.scp)}</div>
+    <div class="atk-info">実数値${target.atk.toFixed(1)}</div>
+    ${preCpHtml}
+  `;
 }
 
 function calculate() {
-  const val = document.getElementById("pokeSelect").value;
-  const iA = parseIv("ivAtk"), iD = parseIv("ivDef"), iS = parseIv("ivSta");
-  const maxIdx = document.getElementById("bbToggle").checked ? 100 : 98;
+  const sel = ALL_POKEMON.find(p => p.id === selectedPokeId);
+  if (!sel) return;
 
-  let targetList = [];
-  if (val === "custom") {
-    targetList = [{
-      id: "custom", name: "カスタム種族値",
-      atk: Number(document.getElementById("baseAtk").value) || 100,
-      def: Number(document.getElementById("baseDef").value) || 100,
-      sta: Number(document.getElementById("baseSta").value) || 100
-    }];
-  } else {
-    const sel = ALL_POKEMON.find(p => p.id === val);
-    if (sel) {
-      targetList = ALL_POKEMON.filter(p => p.chain === sel.chain).sort((a, b) => (a.dex || 0) - (b.dex || 0));
-    }
-  }
+  // メガ進化 -> 最終進化 -> 中間進化 -> 未進化 の順にソート
+  const family = ALL_POKEMON
+    .filter(p => p.chain === sel.chain)
+    .sort((a, b) => (b.stage - a.stage) || (b.dex - a.dex));
 
   const leagues = [
-    { name: "リトル", cap: 500, showRank: true },
-    { name: "スーパー", cap: 1500, showRank: true },
-    { name: "ハイパー", cap: 2500, showRank: true },
-    { name: "マスター", cap: 99999, showRank: false }
+    { key: "500", cap: 500, cls: "c-500" },
+    { key: "SL",  cap: 1500, cls: "c-sl" },
+    { key: "HL",  cap: 2500, cls: "c-hl" },
+    { key: "ML",  cap: 99999, cls: "c-ml" }
   ];
 
   const container = document.getElementById("resultsContainer");
-  container.innerHTML = "";
+  let html = "";
 
-  targetList.forEach(poke => {
-    const card = document.createElement("div");
-    card.className = "card" + (poke.id === val ? " active-poke" : "");
-    let rowsHtml = "";
-
+  family.forEach(poke => {
+    let cellsHtml = "";
     leagues.forEach(lg => {
-      const target = getBestForCap(poke.atk, poke.def, poke.sta, iA, iD, iS, lg.cap, maxIdx);
-      let rankText = "―";
-      if (lg.showRank && target) {
-        const sorted = getAllScpSorted(poke.atk, poke.def, poke.sta, lg.cap, maxIdx);
-        let higher = 0;
-        for (let i = 0; i < sorted.length; i++) {
-          if (sorted[i] > target.scp + 1e-9) higher++; else break;
-        }
-        const rank = higher + 1;
-        rankText = `<span class="${rank <= 50 ? 'rank-top' : ''}">${rank}位</span>`;
+      const t50 = getBestForCap(poke.atk, poke.def, poke.sta, ivs.atk, ivs.def, ivs.sta, lg.cap, 98);
+      const t51 = getBestForCap(poke.atk, poke.def, poke.sta, ivs.atk, ivs.def, ivs.sta, lg.cap, 100);
+
+      if (!t50) {
+        cellsHtml += `<div class="league-cell ${lg.cls}"><div class="sub-info">上限超過</div></div>`;
+        return;
       }
-      rowsHtml += target
-        ? `<tr><td>${lg.name}</td><td>${target.cp} <small>(PL${target.pl})</small></td><td>${rankText}</td><td class="atk-val">${target.atk.toFixed(2)}</td></tr>`
-        : `<tr><td>${lg.name}</td><td colspan="3">上限超過</td></tr>`;
+
+      const r50 = getRank(poke, t50, lg.cap, 98);
+      let cellInner = formatEntry(poke, sel, t50, r50, lg.cap < 99999);
+
+      // Lv50で上限未達（Lv51でさらに伸びる場合）はみんポケ同様Lv51も下段に表示
+      if (t51 && t51.pl > t50.pl) {
+        const r51 = getRank(poke, t51, lg.cap, 100);
+        cellInner += `<div class="lv51-box">${formatEntry(poke, sel, t51, r51, false)}</div>`;
+      }
+
+      cellsHtml += `<div class="league-cell ${lg.cls}">${cellInner}</div>`;
     });
 
-    card.innerHTML = `
-      <div class="poke-title">
-        <span>${poke.name} ${poke.id === val ? "★" : ""}</span>
-        <span class="poke-stats">種族値 A:${poke.atk} / D:${poke.def} / H:${poke.sta}</span>
+    html += `
+      <div class="poke-block">
+        <div class="poke-name-bar ${poke.id === sel.id ? 'is-selected' : ''}">${poke.name}</div>
+        <div class="league-grid">${cellsHtml}</div>
       </div>
-      <table><thead><tr><th>リーグ</th><th>CP (PL)</th><th>SCP順位</th><th>攻撃実数値</th></tr></thead><tbody>${rowsHtml}</tbody></table>
     `;
-    container.appendChild(card);
   });
+
+  container.innerHTML = html;
 }
 
+initIvBars();
+loadPokemonData();
 if ("serviceWorker" in navigator) navigator.serviceWorker.register("sw.js");
-fetchAllPokemon();
 </script>
 </body>
 </html>
