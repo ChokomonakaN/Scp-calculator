@@ -2,400 +2,217 @@
 <html lang="ja">
 <head>
   <meta charset="UTF-8">
-  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
   <title>GBL SCP＆攻撃実数値 計算機</title>
   <link rel="manifest" href="manifest.json">
   <style>
-    body { font-family: -apple-system, BlinkMacSystemFont, sans-serif; background: #121212; color: #f0f0f0; margin: 0; padding: 14px; }
-    h1 { font-size: 1.15rem; margin: 0 0 10px 0; color: #4db6ac; display: flex; justify-content: space-between; align-items: center; }
-    .status-badge { font-size: 0.72rem; padding: 3px 8px; border-radius: 12px; background: #263238; color: #80cbc4; font-weight: normal; }
-    .card { background: #1e1e1e; border-radius: 10px; padding: 14px; margin-bottom: 12px; border: 1px solid #2c2c2c; }
-    .card.active-poke { border-color: #4db6ac; box-shadow: 0 0 8px rgba(77,182,172,0.25); }
-    .poke-title { font-size: 1rem; font-weight: bold; margin-bottom: 8px; color: #fff; display: flex; justify-content: space-between; align-items: center; }
-    .poke-stats { font-size: 0.75rem; color: #999; font-weight: normal; }
-    label { display: block; font-size: 0.8rem; color: #aaa; margin-bottom: 4px; }
+    :root {
+      --bg-color: #f4f6f8;
+      --card-bg: #ffffff;
+      --text-color: #222222;
+      --sub-text: #666666;
+      --border-color: #e0e4e8;
+      --input-bg: #f9fafb;
+      --input-border: #cccccc;
+      --accent-color: #00897b;
+      --active-card-border: #00897b;
+      --active-card-shadow: rgba(0, 137, 123, 0.2);
+      --rank-top-color: #d97706;
+      --atk-val-color: #e65100;
+      --badge-bg: #e0f2f1;
+      --badge-text: #00695c;
+      --btn-bg: #e2e8f0;
+      --btn-text: #334155;
+      --gauge-empty: #d6d9dc;
+      --gauge-empty-text: #ffffff;
+      --gauge-orange: #ee9234;
+      --gauge-max: #e27268;
+    }
+
+    body.dark-mode {
+      --bg-color: #121212;
+      --card-bg: #1e1e1e;
+      --text-color: #f0f0f0;
+      --sub-text: #aaaaaa;
+      --border-color: #2c2c2c;
+      --input-bg: #2a2a2a;
+      --input-border: #444444;
+      --accent-color: #4db6ac;
+      --active-card-border: #4db6ac;
+      --active-card-shadow: rgba(77, 182, 172, 0.25);
+      --rank-top-color: #ffd54f;
+      --atk-val-color: #ff8a65;
+      --badge-bg: #263238;
+      --badge-text: #80cbc4;
+      --btn-bg: #333333;
+      --btn-text: #dddddd;
+      --gauge-empty: #383838;
+      --gauge-empty-text: #999999;
+      --gauge-orange: #e68a2e;
+      --gauge-max: #db685e;
+    }
+
+    body {
+      font-family: -apple-system, BlinkMacSystemFont, "Hiragino Sans", sans-serif;
+      background: var(--bg-color);
+      color: var(--text-color);
+      margin: 0;
+      padding: 12px;
+      transition: background 0.2s, color 0.2s;
+    }
+
+    .header-row {
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      margin-bottom: 10px;
+      gap: 6px;
+    }
+
+    h1 {
+      font-size: 1.05rem;
+      margin: 0;
+      color: var(--accent-color);
+    }
+
+    .header-controls {
+      display: flex;
+      align-items: center;
+      gap: 6px;
+    }
+
+    .status-badge {
+      font-size: 0.7rem;
+      padding: 4px 8px;
+      border-radius: 12px;
+      background: var(--badge-bg);
+      color: var(--badge-text);
+    }
+
+    .theme-btn {
+      background: var(--btn-bg);
+      color: var(--btn-text);
+      border: 1px solid var(--border-color);
+      padding: 5px 10px;
+      border-radius: 14px;
+      font-size: 0.75rem;
+      font-weight: bold;
+      cursor: pointer;
+    }
+
+    .card {
+      background: var(--card-bg);
+      border-radius: 12px;
+      padding: 12px;
+      margin-bottom: 12px;
+      border: 1px solid var(--border-color);
+      box-shadow: 0 1px 3px rgba(0,0,0,0.04);
+    }
+
+    .card.active-poke {
+      border: 2px solid var(--active-card-border);
+      box-shadow: 0 0 8px var(--active-card-shadow);
+    }
+
+    .poke-title {
+      font-size: 1rem;
+      font-weight: bold;
+      margin-bottom: 8px;
+      color: var(--text-color);
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+    }
+
+    .poke-stats {
+      font-size: 0.75rem;
+      color: var(--sub-text);
+      font-weight: normal;
+    }
+
+    label {
+      display: block;
+      font-size: 0.8rem;
+      color: var(--sub-text);
+      margin-bottom: 4px;
+      font-weight: 600;
+    }
+
     input[type="text"], select, input[type="number"] {
-      width: 100%; padding: 10px; font-size: 0.95rem; border-radius: 6px;
-      border: 1px solid #333; background: #2a2a2a; color: #fff; box-sizing: border-box; margin-bottom: 10px;
-    }
-    .iv-grid { display: grid; grid-template-columns: repeat(3, 1fr); gap: 8px; }
-    .custom-stats { display: none; grid-template-columns: repeat(3, 1fr); gap: 8px; margin-top: 4px; }
-    table { width: 100%; border-collapse: collapse; font-size: 0.88rem; }
-    th, td { padding: 8px 4px; text-align: center; border-bottom: 1px solid #2c2c2c; }
-    th { color: #4db6ac; font-size: 0.78rem; }
-    tr:last-child td { border-bottom: none; }
-    .rank-top { color: #ffd54f; font-weight: bold; }
-    .atk-val { color: #ff8a65; font-weight: bold; }
-    .toggle-row { display: flex; align-items: center; justify-content: space-between; font-size: 0.85rem; margin-top: 4px; }
-    .toggle-left { display: flex; align-items: center; gap: 6px; }
-    .reload-btn { background: #333; color: #ccc; border: none; padding: 5px 10px; border-radius: 6px; font-size: 0.75rem; cursor: pointer; }
-  </style>
-</head>
-<body>
-
-  <h1>
-    <span>SCP ＆ 攻撃実数値 計算機</span>
-    <span id="dbStatus" class="status-badge">データ確認中...</span>
-  </h1>
-
-  <div class="card">
-    <label>ポケモン検索（ひらがな・カタカナ可）</label>
-    <input type="text" id="searchInput" placeholder="例: リザードン / まりるり / イーブイ" oninput="filterPokemon()">
-
-    <label>ポケモン選択（選択すると進化系統＆メガを全員表示）</label>
-    <select id="pokeSelect" onchange="onPokeChange()"></select>
-
-    <div id="customBox" class="custom-stats">
-      <div><label>種族値 攻撃</label><input type="number" id="baseAtk" value="200" oninput="calculate()"></div>
-      <div><label>種族値 防御</label><input type="number" id="baseDef" value="200" oninput="calculate()"></div>
-      <div><label>種族値 HP</label><input type="number" id="baseSta" value="200" oninput="calculate()"></div>
-    </div>
-
-    <div class="iv-grid">
-      <div><label>攻撃 IV (0-15)</label><input type="number" id="ivAtk" min="0" max="15" value="0" oninput="calculate()"></div>
-      <div><label>防御 IV (0-15)</label><input type="number" id="ivDef" min="0" max="15" value="15" oninput="calculate()"></div>
-      <div><label>HP IV (0-15)</label><input type="number" id="ivSta" min="0" max="15" value="15" oninput="calculate()"></div>
-    </div>
-
-    <div class="toggle-row">
-      <div class="toggle-left">
-        <input type="checkbox" id="bbToggle" onchange="calculate()">
-        <label for="bbToggle" style="margin:0; color:#f0f0f0;">最高の相棒（PL51上限）</label>
-      </div>
-      <button class="reload-btn" onclick="fetchAllPokemon(true)">図鑑データ再取得</button>
-    </div>
-  </div>
-
-  <div id="resultsContainer"></div>
-
-<script>
-// 初期内蔵データ（万が一初回オフラインでもすぐ動く用）
-const FALLBACK_DATA = [
-  { id: "4", name: "ヒトカゲ", atk: 116, def: 93, sta: 118, chain: 2 },
-  { id: "5", name: "リザード", atk: 158, def: 126, sta: 151, chain: 2 },
-  { id: "6", name: "リザードン", atk: 223, def: 173, sta: 186, chain: 2 },
-  { id: "6_mx", name: "メガリザードンX", atk: 273, def: 213, sta: 186, chain: 2 },
-  { id: "6_my", name: "メガリザードンY", atk: 319, def: 212, sta: 186, chain: 2 },
-  { id: "183", name: "マリル", atk: 37, def: 93, sta: 172, chain: 90 },
-  { id: "184", name: "マリルリ", atk: 112, def: 152, sta: 225, chain: 90 },
-  { id: "298", name: "ルリリ", atk: 36, def: 71, sta: 137, chain: 90 },
-  { id: "333", name: "チルット", atk: 76, def: 132, sta: 128, chain: 168 },
-  { id: "334", name: "チルタリス", atk: 141, def: 201, sta: 181, chain: 168 },
-  { id: "334_m", name: "メガチルタリス", atk: 222, def: 218, sta: 181, chain: 168 },
-  { id: "147", name: "ミニリュウ", atk: 119, def: 91, sta: 121, chain: 76 },
-  { id: "148", name: "ハクリュー", atk: 163, def: 135, sta: 156, chain: 76 },
-  { id: "149", name: "カイリュー", atk: 263, def: 198, sta: 209, chain: 76 },
-  { id: "808", name: "メルタン", atk: 118, def: 99, sta: 130, chain: 428 },
-  { id: "809", name: "メルメタル", atk: 226, def: 190, sta: 264, chain: 428 },
-  { id: "679", name: "ヒトツキ", atk: 135, def: 139, sta: 128, chain: 349 },
-  { id: "680", name: "ニダンギル", atk: 188, def: 206, sta: 153, chain: 349 },
-  { id: "681", name: "ギルガルド(シールド)", atk: 97, def: 291, sta: 155, chain: 349 },
-  { id: "681_b", name: "ギルガルド(ブレード)", atk: 291, def: 97, sta: 155, chain: 349 }
-];
-
-const CPM = [
-  0.094, 0.135137432, 0.16639787, 0.192650919, 0.21573247, 0.236572661, 0.25572005, 0.273530381,
-  0.29024988, 0.306057377, 0.3210876, 0.335445036, 0.34921268, 0.362457751, 0.37523559, 0.387592406,
-  0.39956728, 0.411193551, 0.42250001, 0.432926419, 0.44310755, 0.4530599578, 0.46279839, 0.472336083,
-  0.48168495, 0.4908558, 0.49985844, 0.508701765, 0.51739395, 0.525942511, 0.53435433, 0.542635767,
-  0.55079269, 0.558830576, 0.56675452, 0.574569153, 0.58227891, 0.589887917, 0.59740001, 0.604818814,
-  0.61215729, 0.619399365, 0.62656713, 0.633644533, 0.64065295, 0.647576426, 0.65443563, 0.661214806,
-  0.667934, 0.674577537, 0.68116492, 0.687680648, 0.69414365, 0.700538673, 0.70688421, 0.713164996,
-  0.71939909, 0.725571552, 0.7317, 0.734741009, 0.73776948, 0.740785574, 0.74378943, 0.746781211,
-  0.74976104, 0.752729087, 0.75568551, 0.758630378, 0.76156384, 0.764486065, 0.76739717, 0.770297266,
-  0.7731865, 0.776064962, 0.77893275, 0.781790055, 0.78463697, 0.787473578, 0.79030001, 0.792803968,
-  0.79530001, 0.797800015, 0.8003, 0.802799995, 0.8053, 0.8078, 0.81029999, 0.812799985,
-  0.81529999, 0.81779999, 0.82029999, 0.82279999, 0.82529999, 0.82779999, 0.83029999, 0.83279999,
-  0.83529999, 0.83779999, 0.84029999, 0.84279999, 0.84529999
-];
-
-let ALL_POKEMON = [];
-let rankCache = {};
-
-// ひらがな→カタカナ変換（検索用）
-function toKatakana(str) {
-  return str.replace(/[\u3041-\u3096]/g, m => String.fromCharCode(m.charCodeAt(0) + 0x60));
-}
-
-// 全ポケモンデータの取得＆ローカル保存
-async function fetchAllPokemon(force = false) {
-  const statusEl = document.getElementById("dbStatus");
-  const saved = localStorage.getItem("pogo_all_pokemon_v2");
-
-  if (saved && !force) {
-    try {
-      ALL_POKEMON = JSON.parse(saved);
-      statusEl.textContent = `オフライン対応済 (${ALL_POKEMON.length}種)`;
-      populateSelect();
-      return;
-    } catch (e) {}
-  }
-
-  statusEl.textContent = "全ポケモン取得中...";
-  try {
-    const res = await fetch("https://pokemon-go-api.github.io/pokemon-go-api/api/pokedex.json");
-    if (!res.ok) throw new Error("Network error");
-    const raw = await res.json();
-
-    // 進化チェーン（グループ）を連結するためのUnion-Find
-    const parent = {};
-    const find = (x) => {
-      if (!parent[x]) parent[x] = x;
-      return parent[x] === x ? x : (parent[x] = find(parent[x]));
-    };
-    const union = (a, b) => {
-      const ra = find(a), rb = find(b);
-      if (ra !== rb) parent[rb] = ra;
-    };
-
-    raw.forEach(p => {
-      if (!p.id) return;
-      find(p.id);
-      if (p.evolutions) p.evolutions.forEach(ev => { if (ev.id) union(p.id, ev.id); });
-      if (p.regionForms) {
-        Object.values(p.regionForms).forEach(rf => {
-          if (!rf.id) return;
-          find(rf.id);
-          if (rf.evolutions) rf.evolutions.forEach(ev => { if (ev.id) union(rf.id, ev.id); });
-        });
-      }
-    });
-
-    const list = [];
-    raw.forEach(p => {
-      if (!p.stats || !p.names || !p.names.Japanese) return;
-      const baseChain = find(p.id);
-      const jaName = p.names.Japanese;
-
-      list.push({
-        id: p.id,
-        dex: p.dexNr,
-        name: jaName,
-        atk: p.stats.attack,
-        def: p.stats.defense,
-        sta: p.stats.stamina,
-        chain: baseChain
-      });
-
-      // リージョンフォーム（アローラ・ガラル・ヒスイ・パルデア等）やフォルム違い
-      if (p.regionForms) {
-        Object.values(p.regionForms).forEach(rf => {
-          if (!rf.stats || !rf.names || !rf.names.Japanese) return;
-          list.push({
-            id: rf.id,
-            dex: p.dexNr,
-            name: rf.names.Japanese,
-            atk: rf.stats.attack,
-            def: rf.stats.defense,
-            sta: rf.stats.stamina,
-            chain: find(rf.id) || baseChain
-          });
-        });
-      }
-
-      // メガシンカ・ゲンシカイキ
-      if (p.megaEvolutions) {
-        Object.values(p.megaEvolutions).forEach(mg => {
-          if (!mg.stats || !mg.names || !mg.names.Japanese) return;
-          list.push({
-            id: mg.id,
-            dex: p.dexNr,
-            name: mg.names.Japanese,
-            atk: mg.stats.attack,
-            def: mg.stats.defense,
-            sta: mg.stats.stamina,
-            chain: baseChain
-          });
-        });
-      }
-    });
-
-    // ギルガルド等の一部特殊フォルム補完
-    if (!list.some(x => x.name.includes("ギルガルド"))) {
-      FALLBACK_DATA.filter(x => x.chain === 349).forEach(x => list.push(x));
+      width: 100%;
+      padding: 10px;
+      font-size: 0.95rem;
+      border-radius: 8px;
+      border: 1px solid var(--input-border);
+      background: var(--input-bg);
+      color: var(--text-color);
+      box-sizing: border-box;
+      margin-bottom: 10px;
     }
 
-    ALL_POKEMON = list;
-    localStorage.setItem("pogo_all_pokemon_v2", JSON.stringify(ALL_POKEMON));
-    statusEl.textContent = `全図鑑保存完了 (${ALL_POKEMON.length}種)`;
-  } catch (err) {
-    ALL_POKEMON = FALLBACK_DATA;
-    statusEl.textContent = `内蔵データ動作中 (${ALL_POKEMON.length}種)`;
-  }
-  populateSelect();
-}
-
-function populateSelect(filterText = "") {
-  const select = document.getElementById("pokeSelect");
-  const prevVal = select.value;
-  select.innerHTML = "";
-
-  const kataFilter = toKatakana(filterText.trim());
-  const filtered = ALL_POKEMON.filter(p => !kataFilter || toKatakana(p.name).includes(kataFilter));
-
-  filtered.forEach((p) => {
-    const opt = document.createElement("option");
-    opt.value = p.id;
-    opt.textContent = p.name;
-    select.appendChild(opt);
-  });
-
-  const customOpt = document.createElement("option");
-  customOpt.value = "custom";
-  customOpt.textContent = "★ 種族値を手入力（カスタム）";
-  select.appendChild(customOpt);
-
-  if (prevVal && Array.from(select.options).some(o => o.value === prevVal)) {
-    select.value = prevVal;
-  } else if (filtered.length > 0) {
-    const charizard = filtered.find(p => p.name === "リザードン");
-    select.value = charizard ? charizard.id : filtered[0].id;
-  } else {
-    select.value = "custom";
-  }
-  onPokeChange();
-}
-
-function filterPokemon() {
-  const q = document.getElementById("searchInput").value;
-  populateSelect(q);
-}
-
-function onPokeChange() {
-  const isCustom = document.getElementById("pokeSelect").value === "custom";
-  document.getElementById("customBox").style.display = isCustom ? "grid" : "none";
-  calculate();
-}
-
-function getBestForCap(bA, bD, bS, iA, iD, iS, cap, maxIdx) {
-  let best = null;
-  for (let i = 0; i <= maxIdx; i++) {
-    const m = CPM[i];
-    const atk = (bA + iA) * m;
-    const def = (bD + iD) * m;
-    const sta = Math.max(10, Math.floor((bS + iS) * m));
-    const cp = Math.max(10, Math.floor((atk * Math.sqrt(def) * Math.sqrt(sta)) / 10));
-    if (cp <= cap) {
-      const scp = Math.pow(atk * def * sta, 2 / 3) / 10;
-      best = { cp, pl: 1 + i * 0.5, atk, scp };
-    } else {
-      break;
+    .custom-stats {
+      display: none;
+      grid-template-columns: repeat(3, 1fr);
+      gap: 8px;
+      margin-bottom: 8px;
     }
-  }
-  return best;
-}
 
-// 4096通りのSCP一覧をキャッシュして高速化
-function getAllScpSorted(bA, bD, bS, cap, maxIdx) {
-  const key = `${bA}_${bD}_${bS}_${cap}_${maxIdx}`;
-  if (rankCache[key]) return rankCache[key];
-  const arr = [];
-  for (let a = 0; a <= 15; a++) {
-    for (let d = 0; d <= 15; d++) {
-      for (let s = 0; s <= 15; s++) {
-        const cand = getBestForCap(bA, bD, bS, a, d, s, cap, maxIdx);
-        if (cand) arr.push(cand.scp);
-      }
+    /* 15分割ゲージUI */
+    .iv-section {
+      margin-bottom: 12px;
     }
-  }
-  arr.sort((x, y) => y - x);
-  rankCache[key] = arr;
-  return arr;
-}
 
-function calculate() {
-  const val = document.getElementById("pokeSelect").value;
-  const iA = Math.min(15, Math.max(0, Number(document.getElementById("ivAtk").value) || 0));
-  const iD = Math.min(15, Math.max(0, Number(document.getElementById("ivDef").value) || 0));
-  const iS = Math.min(15, Math.max(0, Number(document.getElementById("ivSta").value) || 0));
-  const maxIdx = document.getElementById("bbToggle").checked ? 100 : 98;
-
-  let targetList = [];
-  if (val === "custom") {
-    targetList = [{
-      id: "custom",
-      name: "カスタム種族値",
-      atk: Number(document.getElementById("baseAtk").value) || 100,
-      def: Number(document.getElementById("baseDef").value) || 100,
-      sta: Number(document.getElementById("baseSta").value) || 100
-    }];
-  } else {
-    const selected = ALL_POKEMON.find(p => p.id === val);
-    if (selected) {
-      // 同じ進化系統（進化前・進化後・分岐・メガシンカ含む）を全員取得
-      targetList = ALL_POKEMON.filter(p => p.chain === selected.chain);
+    .iv-header {
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      margin-bottom: 5px;
     }
-  }
 
-  const leagues = [
-    { name: "リトル", cap: 500, showRank: true },
-    { name: "スーパー", cap: 1500, showRank: true },
-    { name: "ハイパー", cap: 2500, showRank: true },
-    { name: "マスター", cap: 99999, showRank: false }
-  ];
+    .iv-label-text {
+      font-size: 0.9rem;
+      font-weight: bold;
+      color: var(--text-color);
+    }
 
-  const container = document.getElementById("resultsContainer");
-  container.innerHTML = "";
+    .iv-val-num {
+      color: var(--accent-color);
+      font-size: 1rem;
+      margin-left: 4px;
+    }
 
-  targetList.forEach(poke => {
-    const card = document.createElement("div");
-    card.className = "card" + (poke.id === val ? " active-poke" : "");
+    .zero-btn {
+      background: var(--btn-bg);
+      color: var(--btn-text);
+      border: none;
+      border-radius: 6px;
+      padding: 3px 10px;
+      font-size: 0.75rem;
+      font-weight: bold;
+      cursor: pointer;
+      touch-action: manipulation;
+    }
 
-    let rowsHtml = "";
-    leagues.forEach(lg => {
-      const target = getBestForCap(poke.atk, poke.def, poke.sta, iA, iD, iS, lg.cap, maxIdx);
-      let rankText = "―";
+    .zero-btn.active-zero {
+      background: var(--accent-color);
+      color: #fff;
+    }
 
-      if (lg.showRank && target) {
-        const sorted = getAllScpSorted(poke.atk, poke.def, poke.sta, lg.cap, maxIdx);
-        let higherCount = 0;
-        for (let i = 0; i < sorted.length; i++) {
-          if (sorted[i] > target.scp + 0.0001) higherCount++;
-          else break;
-        }
-        const rank = higherCount + 1;
-        rankText = `<span class="${rank <= 50 ? 'rank-top' : ''}">${rank}位</span>`;
-      }
+    .gauge-row {
+      display: grid;
+      grid-template-columns: repeat(3, 1fr);
+      gap: 5px;
+      user-select: none;
+      -webkit-user-select: none;
+    }
 
-      if (target) {
-        rowsHtml += `
-          <tr>
-            <td>${lg.name}</td>
-            <td>${target.cp} <small>(PL${target.pl})</small></td>
-            <td>${rankText}</td>
-            <td class="atk-val">${target.atk.toFixed(2)}</td>
-          </tr>
-        `;
-      } else {
-        rowsHtml += `<tr><td>${lg.name}</td><td colspan="3">上限超過 (PL1でCP${lg.cap}超)</td></tr>`;
-      }
-    });
+    .gauge-group {
+      display: grid;
+      grid-template-columns: repeat(5, 1fr);
+      gap: 1.5px;
+    }
 
-    card.innerHTML = `
-      <div class="poke-title">
-        <span>${poke.name} ${poke.id === val ? "★" : ""}</span>
-        <span class="poke-stats">種族値 A:${poke.atk} / D:${poke.def} / H:${poke.sta}</span>
-      </div>
-      <table>
-        <thead>
-          <tr>
-            <th>リーグ</th>
-            <th>CP (PL)</th>
-            <th>SCP順位</th>
-            <th>攻撃実数値</th>
-          </tr>
-        </thead>
-        <tbody>${rowsHtml}</tbody>
-      </table>
-    `;
-    container.appendChild(card);
-  });
-}
-
-if ("serviceWorker" in navigator) {
-  navigator.serviceWorker.register("sw.js");
-}
-fetchAllPokemon();
-</script>
-</body>
-</html>
+    .gauge-cell {
+      height: 42px;
+      background: var(--gauge-empty);
+      color:
