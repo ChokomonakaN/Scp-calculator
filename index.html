@@ -39,9 +39,11 @@
   </h1>
 
   <div class="card">
-    <label>ポケモンを選択（文字入力で絞り込み可能）</label>
-    <input type="text" id="searchInput" placeholder="ポケモン名を入力（ひらがな・カタカナ）" oninput="filterPokemon()">
-    <select id="pokeSelect" size="5" onchange="onPokeSelectChange()" style="height: 120px; margin-bottom: 10px;"></select>
+    <label>ポケモン検索（ひらがな・カタカナ可）</label>
+    <input type="text" id="searchInput" placeholder="例: ドジョッチ / りざーどん / ギルガルド" oninput="filterPokemon()">
+
+    <label>ポケモン選択（進化系統＆メガを一括表示）</label>
+    <select id="pokeSelect" onchange="onPokeChange()"></select>
 
     <div id="customBox" class="custom-stats">
       <div><label>種族値 攻撃</label><input type="number" id="baseAtk" value="200" oninput="calculate()"></div>
@@ -115,7 +117,7 @@ async function fetchAllPokemon(force = false) {
     try {
       ALL_POKEMON = JSON.parse(saved);
       statusEl.textContent = `オフライン対応済 (${ALL_POKEMON.length}種)`;
-      updateSelectOptions();
+      populateSelect();
       return;
     } catch (e) {}
   }
@@ -163,48 +165,36 @@ async function fetchAllPokemon(force = false) {
     ALL_POKEMON = FALLBACK_DATA;
     statusEl.textContent = `内蔵データ動作中 (${ALL_POKEMON.length}種)`;
   }
-  updateSelectOptions();
+  populateSelect();
 }
 
-function updateSelectOptions() {
+function populateSelect(filterText = "") {
   const select = document.getElementById("pokeSelect");
-  const query = document.getElementById("searchInput").value;
-  const kataQuery = toKatakana(query.trim());
   const prevVal = select.value;
-
   select.innerHTML = "";
-  const filtered = ALL_POKEMON.filter(p => !kataQuery || toKatakana(p.name).includes(kataQuery));
+  const kataFilter = toKatakana(filterText.trim());
+  const filtered = ALL_POKEMON.filter(p => !kataFilter || toKatakana(p.name).includes(kataFilter));
 
   filtered.forEach(p => {
     const opt = document.createElement("option");
-    opt.value = p.id;
-    opt.textContent = p.name;
+    opt.value = p.id; opt.textContent = p.name;
     select.appendChild(opt);
   });
-
   const customOpt = document.createElement("option");
-  customOpt.value = "custom";
-  customOpt.textContent = "★ 種族値を手入力（カスタム）";
+  customOpt.value = "custom"; customOpt.textContent = "★ 種族値を手入力（カスタム）";
   select.appendChild(customOpt);
 
-  if (prevVal && Array.from(select.options).some(o => o.value === prevVal)) {
-    select.value = prevVal;
-  } else if (filtered.length > 0) {
-    const charizard = filtered.find(p => p.name === "リザードン");
-    select.value = charizard ? charizard.id : filtered[0].id;
-  } else {
-    select.value = "custom";
-  }
-  onPokeSelectChange();
+  if (prevVal && Array.from(select.options).some(o => o.value === prevVal)) select.value = prevVal;
+  else if (filtered.length > 0) {
+    const def = filtered.find(p => p.name === "リザードン");
+    select.value = def ? def.id : filtered[0].id;
+  } else select.value = "custom";
+  onPokeChange();
 }
 
-function filterPokemon() {
-  updateSelectOptions();
-}
-
-function onPokeSelectChange() {
-  const val = document.getElementById("pokeSelect").value;
-  document.getElementById("customBox").style.display = (val === "custom") ? "grid" : "none";
+function filterPokemon() { populateSelect(document.getElementById("searchInput").value); }
+function onPokeChange() {
+  document.getElementById("customBox").style.display = document.getElementById("pokeSelect").value === "custom" ? "grid" : "none";
   calculate();
 }
 
