@@ -1,4 +1,4 @@
-const CACHE_NAME = "scp-calc-v2";
+const CACHE_NAME = "scp-calc-auto-v1";
 const ASSETS = ["./", "./index.html", "./manifest.json"];
 
 self.addEventListener("install", (e) => {
@@ -15,6 +15,15 @@ self.addEventListener("activate", (e) => {
   self.clients.claim();
 });
 
+// オンライン時は常に最新を取得して保存、オフライン時は保存データを表示
 self.addEventListener("fetch", (e) => {
-  e.respondWith(caches.match(e.request).then((res) => res || fetch(e.request)));
+  e.respondWith(
+    fetch(e.request)
+      .then((res) => {
+        const clone = res.clone();
+        caches.open(CACHE_NAME).then((cache) => cache.put(e.request, clone));
+        return res;
+      })
+      .catch(() => caches.match(e.request))
+  );
 });
